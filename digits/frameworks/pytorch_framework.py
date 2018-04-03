@@ -31,7 +31,7 @@ class PyTorchFramework(Framework):
     NAME = 'PyTorch'
 
     # identifier of framework class
-    CLASS = 'PyTorch'
+    CLASS = 'pytorch'
 
     # whether this framework can shuffle data during training
     CAN_SHUFFLE_DATA = True
