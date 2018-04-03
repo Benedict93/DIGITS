@@ -174,18 +174,6 @@ class PyTorchTrainTask(TrainTask):
 
         if self.batch_size is not None:
             args.append('--batch_size=%d' % self.batch_size)
-		#to check if need mean file
-		"""
-        if self.use_mean != 'none':
-            filename = self.create_mean_file()
-            args.append('--mean=%s' % filename)
-			
-		if self.use_mean != 'none':
-            mean_file = self.dataset.get_mean_file()
-            assert mean_file is not None, 'Failed to retrieve mean file.'
-            args.append('--mean=%s' % self.dataset.path(mean_file))	
-		
-		"""
         if hasattr(self.dataset, 'labels_file'):
             args.append('--labels_list=%s' % self.dataset.path(self.dataset.labels_file))
         
@@ -237,9 +225,7 @@ class PyTorchTrainTask(TrainTask):
 
         if self.random_seed is not None:
             args.append('--seed=%s' % self.random_seed)
-		
-		#Put in with PyTorch Solvers
-							  
+ 
         if self.solver_type == 'SGD':
             args.append('--optimization=sgd')
         elif self.solver_type == 'NESTEROV':
