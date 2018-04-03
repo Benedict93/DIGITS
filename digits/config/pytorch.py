@@ -20,7 +20,7 @@ if not pt_enabled:
     print('pytorch support disabled.')
 
 if pt_enabled:
-    option_list['[pytorch]'] = {
+    option_list['pytorch'] = {
         'enabled': True
     }
 else:
