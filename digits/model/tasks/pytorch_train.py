@@ -495,7 +495,6 @@ class PyTorchTrainTask(TrainTask):
                                     gpu=gpu)
 
     def infer_one_image(self, image, snapshot_epoch=None, layers=None, gpu=None):
-        def infer_one_image(self, image, snapshot_epoch=None, layers=None, gpu=None):
         """
         Classify an image
         Returns (predictions, visualizations)
