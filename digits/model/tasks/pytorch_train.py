@@ -271,7 +271,7 @@ class PyTorchTrainTask(TrainTask):
         # Augmentations
         assert self.data_aug['flip'] in ['none', 'fliplr', 'flipud', 'fliplrud'], 'Bad or unknown flag "flip"'
         args.append('--augFlip=%s' % self.data_aug['flip'])
-        
+
         if self.data_aug['noise']:
             args.append('--augNoise=%s' % self.data_aug['noise'])
 
@@ -293,8 +293,6 @@ class PyTorchTrainTask(TrainTask):
 
     @override
     def process_output(self, line):
-        = regex.sub('', line).strip()
-		
         self.pytorch_log.write('%s\n' % line)
         self.pytorch_log.flush()
 
