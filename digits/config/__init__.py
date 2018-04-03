@@ -14,6 +14,7 @@ from . import (  # noqa
     store_option,
     tensorflow,
     url_prefix,
+    pytorch,
 )
 
 
