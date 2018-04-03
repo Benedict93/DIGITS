@@ -238,18 +238,18 @@ class PyTorchTrainTask(TrainTask):
             args.append('--optimization=adadelta')
         elif self.solver_type == 'ADAM':
             args.append('--optimization=adam')
-		elif self.solver_type == 'SPARSEADAM':
-			args.append('--optimization=sparseadam')
-		elif self.solver_type == 'ADAMAX':
-			args.append('--optimization=adamax')
-		elif self.solver_type == 'ASGD':
-			args.append('--optimization=asgd')
-		elif self.solver_type == 'LBFGS':
-			args.append('--optimization=lbfgs')
-		elif self.solver_type == 'RPROP':
-			args.append('--optimization=rprop')
+        elif self.solver_type == 'SPARSEADAM':
+            args.append('--optimization=sparseadam')
+        elif self.solver_type == 'ADAMAX':
+            args.append('--optimization=adamax')
+        elif self.solver_type == 'ASGD':
+            args.append('--optimization=asgd')
+        elif self.solver_type == 'LBFGS':
+        	args.append('--optimization=lbfgs')
+        elif self.solver_type == 'RPROP':
+        	args.append('--optimization=rprop')
         
-		else:
+        else:
             raise ValueError('Unknown solver_type %s' % self.solver_type)
 
         if self.val_interval is not None:
@@ -271,18 +271,7 @@ class PyTorchTrainTask(TrainTask):
         # Augmentations
         assert self.data_aug['flip'] in ['none', 'fliplr', 'flipud', 'fliplrud'], 'Bad or unknown flag "flip"'
         args.append('--augFlip=%s' % self.data_aug['flip'])
-		
-		#to check if applies for PyTorch
-		"""
-        assert self.data_aug['quad_rot'] in ['none', 'rot90', 'rot180', 'rotall'], 'Bad or unknown flag "quad_rot"'
-        args.append('--augQuadRot=%s' % self.data_aug['quad_rot'])
-
-        if self.data_aug['rot']:
-            args.append('--augRot=%s' % self.data_aug['rot'])
-
-        if self.data_aug['scale']:
-            args.append('--augScale=%s' % self.data_aug['scale'])
-		"""
+        
         if self.data_aug['noise']:
             args.append('--augNoise=%s' % self.data_aug['noise'])
 
