@@ -160,11 +160,6 @@ class PyTorchTrainTask(TrainTask):
 	"""
     @override
     def task_arguments(self, resources, env):
-        #to know if needs change
-		"""
-		dataset_backend = self.dataset.get_backend()
-        assert dataset_backend == 'lmdb' or dataset_backend == 'hdf5'
-		"""
         args = [sys.executable,
                 os.path.join(os.path.dirname(os.path.abspath(digits.__file__)), 'tools', 'pytorch', 'main.py'),
                 '--network=%s' % self.model_file,
