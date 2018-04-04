@@ -17,36 +17,54 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import threading
 import time
 
 import datetime
 import inspect
-import json
 import logging
 import math
 import numpy as np
 import os
-from six.moves import xrange  # noqa
+import pickle
+
+from six.moves import xrange
 import tensorflow as tf
-import tensorflow.contrib.slim as slim  # noqa
-from tensorflow.python.client import timeline, device_lib  # noqa
-from tensorflow.python.ops import template  # noqa
+from tensorflow.python.client import timeline
 from tensorflow.python.lib.io import file_io
 from tensorflow.core.framework import summary_pb2
-from tensorflow.python.tools import freeze_graph
+
 
 # Local imports
 import utils as digits
 import lr_policy
-from model import Model, Tower  # noqa
-from utils import model_property  # noqa
+from model import Model
 
 import tf_data
+import gandisplay
 
 # Constants
 TF_INTRA_OP_THREADS = 0
 TF_INTER_OP_THREADS = 0
 MIN_LOGS_PER_TRAIN_EPOCH = 8  # torch default: 8
+
+CELEBA_ALL_ATTRIBUTES = """
+                         5_o_Clock_Shadow Arched_Eyebrows Attractive Bags_Under_Eyes Bald Bangs
+                         Big_Lips Big_Nose Black_Hair Blond_Hair Blurry Brown_Hair Bushy_Eyebrows
+                         Chubby Double_Chin Eyeglasses Goatee Gray_Hair Heavy_Makeup High_Cheekbones
+                         Male Mouth_Slightly_Open Mustache Narrow_Eyes No_Beard Oval_Face Pale_Skin
+                         Pointy_Nose Receding_Hairline Rosy_Cheeks Sideburns Smiling Straight_Hair
+                         Wavy_Hair Wearing_Earrings Wearing_Hat Wearing_Lipstick Wearing_Necklace
+                         Wearing_Necktie Young
+                        """.split()
+
+CELEBA_EDITABLE_ATTRIBUTES = [
+    'Bald', 'Black_Hair', 'Blond_Hair', 'Eyeglasses', 'Male', 'Mustache',
+    'Smiling', 'Young', 'Attractive', 'Pale_Skin', 'Big_Nose'
+]
+
+CELEBA_EDITABLE_ATTRIBUTES_IDS = [CELEBA_ALL_ATTRIBUTES.index(attr) for attr in CELEBA_EDITABLE_ATTRIBUTES]
+
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -142,6 +160,10 @@ tf.app.flags.DEFINE_float(
     'augHSVs', 0., """The stddev of HSV's Saturation shift as pre-processing  augmentation""")
 tf.app.flags.DEFINE_float(
     'augHSVv', 0., """The stddev of HSV's Value shift as pre-processing augmentation""")
+
+# GAN Grid
+tf.app.flags.DEFINE_string('zs_file', 'zs.pkl', """Pickle file containing z vectors to use""")
+tf.app.flags.DEFINE_string('attributes_file', 'attributes.pkl', """Pickle file containing attribute vectors""")
 
 
 def save_timeline_trace(run_metadata, save_dir, step):
@@ -278,7 +300,7 @@ def save_snapshot(sess, saver, save_dir, snapshot_prefix, epoch, for_serving=Fal
     snapshot_file = os.path.join(save_dir, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.ckpt')
 
     logging.info('Snapshotting to %s', snapshot_file)
-    checkpoint_path = saver.save(sess, snapshot_file)
+    saver.save(sess, snapshot_file)
     logging.info('Snapshot saved.')
 
     if for_serving:
@@ -294,8 +316,6 @@ def save_snapshot(sess, saver, save_dir, snapshot_prefix, epoch, for_serving=Fal
             f.write(sess.graph_def.SerializeToString())
             logging.info('Saved graph to %s', filename_graph)
         # meta_graph_def = tf.train.export_meta_graph(filename='?')
-
-    return checkpoint_path, filename_graph
 
 
 def save_weight_visualization(w_names, a_names, w, a):
@@ -345,21 +365,27 @@ def Inference(sess, model):
                     continue
 
     try:
-        while not model.queue_coord.should_stop():
-            keys, preds, [w], [a] = sess.run([model.dataloader.batch_k,
-                                              inference_op,
-                                              [weight_vars],
-                                              [activation_ops]])
+        t = 0
 
-            if FLAGS.visualize_inf:
-                save_weight_visualization(weight_vars, activation_ops, w, a)
+        with open(FLAGS.attributes_file, 'rb') as f:
+            attribute_zs = pickle.load(f)
 
-            # @TODO(tzaman): error on no output?
-            for i in range(len(keys)):
-                #    for j in range(len(preds)):
-                # We're allowing multiple predictions per image here. DIGITS doesnt support that iirc
-                logging.info('Predictions for image ' + str(model.dataloader.get_key_index(keys[i])) +
-                             ': ' + json.dumps(preds[i].tolist()))
+        while not False:
+            # model.queue_coord.should_stop():
+            attributes = app.GetAttributes()
+            z = np.zeros(100)
+
+            for idx, attr_scale in enumerate(attributes):
+                z += (attr_scale / 25) * attribute_zs[CELEBA_EDITABLE_ATTRIBUTES_IDS[idx]]
+
+            feed_dict = {model.time_placeholder: float(t),
+                         model.attribute_placeholder: z}
+            preds = sess.run(fetches=inference_op, feed_dict=feed_dict)
+
+            app.DisplayCell(preds)
+
+            t += 1e-5 * app.GetSpeed() * FLAGS.batch_size
+
     except tf.errors.OutOfRangeError:
         print('Done: tf.errors.OutOfRangeError')
 
@@ -389,6 +415,52 @@ def Validation(sess, model, current_epoch):
 def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
+
+
+def input_generator(zs_file, batch_size):
+
+    time_placeholder = tf.placeholder(dtype=tf.float32, shape=())
+    attribute_placeholder = tf.placeholder(dtype=tf.float32, shape=(100,))
+
+    def l2_norm(x):
+        euclidean_norm = tf.sqrt(tf.reduce_sum(tf.square(x)))
+        return euclidean_norm
+
+    def dot_product(x, y):
+        return tf.reduce_sum(tf.mul(x, y))
+
+    def slerp(initial, final, progress):
+        omega = tf.acos(dot_product(initial / l2_norm(initial), final / l2_norm(final)))
+        so = tf.sin(omega)
+        return tf.sin((1.0-progress)*omega) / so * initial + tf.sin(progress*omega)/so * final
+
+    with open(zs_file, 'rb') as f:
+        zs = pickle.load(f)
+        img_count = len(zs)
+        zs = tf.constant(zs, dtype=tf.float32)
+
+    tensors = []
+
+    epoch = tf.to_int32(time_placeholder)
+    indices = tf.range(batch_size)
+    indices_init = (indices * batch_size + epoch) % img_count
+    indices_final = (indices_init + 1) % img_count
+
+    for i in xrange(batch_size):
+        z_init = zs[indices_init[i]]
+        z_final = zs[indices_final[i]]
+
+        progress = tf.mod(time_placeholder, 1)
+
+        # progress = tf.Print(progress, [progress])
+
+        z = slerp(z_init, z_final, progress)
+
+        tensors.append(z)
+
+    batch = tf.pack(tensors) + attribute_placeholder
+
+    return batch, time_placeholder, attribute_placeholder
 
 
 def main(_):
@@ -466,6 +538,9 @@ def main(_):
             },
         }
 
+        # hard-code GAN inference
+        FLAGS.inference_db = "grid.gan"
+
         # Import the network file
         path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), FLAGS.networkDirectory, FLAGS.network)
         exec(open(path_network).read(), globals())
@@ -495,7 +570,7 @@ def main(_):
 
         if FLAGS.validation_db:
             with tf.name_scope(digits.STAGE_VAL) as stage_scope:
-                val_model = Model(digits.STAGE_VAL, FLAGS.croplen, nclasses, reuse_variable=True)
+                val_model = Model(digits.STAGE_VAL, FLAGS.croplen, nclasses)
                 val_model.create_dataloader(FLAGS.validation_db)
                 val_model.dataloader.setup(FLAGS.validation_labels,
                                            False,
@@ -512,7 +587,13 @@ def main(_):
                 inf_model.create_dataloader(FLAGS.inference_db)
                 inf_model.dataloader.setup(None, False, FLAGS.bitdepth, FLAGS.batch_size, 1, FLAGS.seed)
                 inf_model.dataloader.set_augmentation(mean_loader)
-                inf_model.create_model(UserModel, stage_scope)  # noqa
+
+                batch_x, time_placeholder, attribute_placeholder = input_generator(FLAGS.zs_file, FLAGS.batch_size)
+
+                inf_model.create_model(UserModel, stage_scope, batch_x=batch_x)  # noqa
+
+                inf_model.time_placeholder = time_placeholder
+                inf_model.attribute_placeholder = attribute_placeholder
 
         # Start running operations on the Graph. allow_soft_placement must be set to
         # True to build towers on GPU, as some of the ops do not have GPU
@@ -546,7 +627,7 @@ def main(_):
             load_snapshot(sess, FLAGS.weights, tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES))
 
         # Tensorboard: Merge all the summaries and write them out
-        writer = tf.summary.FileWriter(os.path.join(FLAGS.summaries_dir, 'tb'), sess.graph)
+        writer = tf.train.SummaryWriter(os.path.join(FLAGS.summaries_dir, 'tb'), sess.graph)
 
         # If we are inferencing, only do that.
         if FLAGS.inference_db:
@@ -648,6 +729,7 @@ def main(_):
 
                     # @TODO(tzaman): account for variable batch_size value on very last epoch
                     current_epoch = round((step * batch_size_train) / train_model.dataloader.get_total(), epoch_round)
+
                     # Start with a forward pass
                     if ((step % logging_interval_step) == 0):
                         steps_since_log = step - step_last_log
@@ -665,20 +747,13 @@ def main(_):
 
                     # Saving Snapshot
                     if FLAGS.snapshotInterval > 0 and current_epoch >= next_snapshot_save:
-                        checkpoint_path, graphdef_path = save_snapshot(sess,
-                                                                       saver,
-                                                                       FLAGS.save,
-                                                                       snapshot_prefix,
-                                                                       current_epoch,
-                                                                       FLAGS.serving_export
-                                                                       )
+                        save_snapshot(sess, saver, FLAGS.save, snapshot_prefix, current_epoch, FLAGS.serving_export)
 
                         # To find next nearest epoch value that exactly divisible by FLAGS.snapshotInterval
                         next_snapshot_save = (round(float(current_epoch)/FLAGS.snapshotInterval) + 1) * \
                             FLAGS.snapshotInterval
                         last_snapshot_save_epoch = current_epoch
                     writer.flush()
-
             except tf.errors.OutOfRangeError:
                 logging.info('Done training for epochs: tf.errors.OutOfRangeError')
             except ValueError as err:
@@ -689,19 +764,13 @@ def main(_):
 
             # If required, perform final snapshot save
             if FLAGS.snapshotInterval > 0 and FLAGS.epoch > last_snapshot_save_epoch:
-                checkpoint_path, graphdef_path =\
-                    save_snapshot(sess, saver, FLAGS.save, snapshot_prefix, FLAGS.epoch, FLAGS.serving_export)
+                save_snapshot(sess, saver, FLAGS.save, snapshot_prefix, FLAGS.epoch, FLAGS.serving_export)
 
         print('Training wall-time:', time.time()-start)  # @TODO(tzaman) - removeme
 
         # If required, perform final Validation pass
         if FLAGS.validation_db and current_epoch >= next_validation:
             Validation(sess, val_model, current_epoch)
-
-        if FLAGS.train_db:
-            if FLAGS.labels_list:
-                output_tensor = train_model.towers[0].inference
-                out_name, _ = output_tensor.name.split(':')
 
         if FLAGS.train_db:
             del train_model
@@ -714,30 +783,16 @@ def main(_):
         sess.close()
 
         writer.close()
-
-    tf.reset_default_graph()
-
-    del sess
-    if FLAGS.train_db:
-        if FLAGS.labels_list:
-            path_frozen = os.path.join(FLAGS.save, 'frozen_model.pb')
-            print('Saving frozen model at path {}'.format(path_frozen))
-            freeze_graph.freeze_graph(
-                input_graph=graphdef_path,
-                input_saver='',
-                input_binary=True,
-                input_checkpoint=checkpoint_path,
-                output_node_names=out_name,
-                restore_op_name="save/restore_all",
-                filename_tensor_name="save/Const:0",
-                output_graph=path_frozen,
-                clear_devices=True,
-                initializer_nodes="",
-            )
-
-    logging.info('END')
-
-    exit(0)
+        logging.info('END')
+        exit(0)
 
 if __name__ == '__main__':
-    tf.app.run()
+
+    app = gandisplay.DemoApp(0,
+                             grid_size=np.sqrt(FLAGS.batch_size)*64,
+                             attributes=CELEBA_EDITABLE_ATTRIBUTES)
+
+    t = threading.Thread(target=tf.app.run, args=())
+    t.start()
+
+    app.MainLoop()
