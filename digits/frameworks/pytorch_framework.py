@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import os
 import re
 import subprocess
-import time
 import tempfile
 
 from .errors import NetworkVisualizationError
@@ -47,7 +46,7 @@ class PyTorchFramework(Framework):
     HSV Shifting - torchvision.transforms.ColorJitter(brightness=0, contrast=0, saturation=0, hue=0)
     Whitening - torchvision.tranforms.Normalize(mean,std)
     """
-    SUPPORTED_DATA_TRANSFORMATION_TYPES = ['CROPPING']
+    SUPPORTED_DATA_TRANSFORMATION_TYPES = ['MEAN_SUBTRACTION','CROPPING']
     SUPPORTED_DATA_AUGMENTATION_TYPES = ['FLIPPING', 'QUAD_ROTATION', 'ARBITRARY_ROTATION',
                                          'SCALING', 'HSV_SHIFTING']
 

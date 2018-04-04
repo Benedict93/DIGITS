@@ -1,4 +1,3 @@
-# Copyright (c) 2014-2017, NVIDIA CORPORATION.  All rights reserved.
 from __future__ import absolute_import
 
 import operator
@@ -99,8 +98,8 @@ class PyTorchTrainTask(TrainTask):
             del state['image_mean']
         if 'classifier' in state:
             del state['classifier']
-        if 'torch_log' in state:
-            del state['torch_log']
+        if 'pytorch_log' in state:
+            del state['pytorch_log']
 
         return state
 
@@ -132,32 +131,7 @@ class PyTorchTrainTask(TrainTask):
         self.displaying_network = False
         self.temp_unrecognized_output = []
         return True
-	"""
-    def create_mean_file(self):
-        filename = os.path.join(self.job_dir, constants.MEAN_FILE_IMAGE)
-        # don't recreate file if it already exists
-        if not os.path.exists(filename):
-            mean_file = self.dataset.get_mean_file()
-            assert mean_file is not None and mean_file.endswith('.binaryproto'), \
-                'Mean subtraction required but dataset has no mean file in .binaryproto format'
-            blob = caffe_pb2.BlobProto()
-            with open(self.dataset.path(mean_file), 'rb') as infile:
-                blob.ParseFromString(infile.read())
-            data = np.array(blob.data, dtype=np.uint8).reshape(blob.channels, blob.height, blob.width)
-            if blob.channels == 3:
-                # converting from BGR to RGB
-                data = data[[2, 1, 0], ...]  # channel swap
-                # convert to (height, width, channels)
-                data = data.transpose((1, 2, 0))
-            else:
-                assert blob.channels == 1
-                # convert to (height, width)
-                data = data[0]
-            # save to file
-            image = PIL.Image.fromarray(data)
-            image.save(filename)
-        return filename
-	"""
+
     @override
     def task_arguments(self, resources, env):
         args = [sys.executable,
@@ -174,6 +148,12 @@ class PyTorchTrainTask(TrainTask):
 
         if self.batch_size is not None:
             args.append('--batch_size=%d' % self.batch_size)
+
+        if self.use_mean != 'none':
+                mean_file = self.dataset.get_mean_file()
+                assert mean_file is not None, 'Failed to retrieve mean file.'
+                args.append('--mean=%s' % self.dataset.path(mean_file))        
+
         if hasattr(self.dataset, 'labels_file'):
             args.append('--labels_list=%s' % self.dataset.path(self.dataset.labels_file))
         
@@ -407,15 +387,11 @@ class PyTorchTrainTask(TrainTask):
         # TODO: move to TrainTask
         from digits.webapp import socketio
 
-        socketio.emit('task update',
-                      {
-                          'task': self.html_id(),
-                          'update': 'snapshots',
-                          'data': self.snapshot_list(),
-                      },
+        socketio.emit('task update', {'task': self.html_id(),
+                                      'update': 'snapshots',
+                                      'data': self.snapshot_list()},
                       namespace='/jobs',
-                      room=self.job_id,
-                      )
+                      room=self.job_id)
 
     # TrainTask overrides
     @override
@@ -435,7 +411,7 @@ class PyTorchTrainTask(TrainTask):
             lines = []
             for line in output.split('\n'):
                 # parse pytorch header
-                timestamp, level, message = self.preprocess_output_PyTorch(line)
+                timestamp, level, message = self.preprocess_output_pytorch(line)
 
                 if message:
                     lines.append(message)
@@ -955,7 +931,8 @@ class PyTorchTrainTask(TrainTask):
             "mean file": mean_file,
             "snapshot file": self.get_snapshot_filename(epoch),
             "model file": self.model_file,
-            "framework": "torch"
+            "framework": "pytorch",
+            "mean subtraction": self.use_mean
         }
 
         if hasattr(self, "digits_version"):
