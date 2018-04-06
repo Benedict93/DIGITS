@@ -106,7 +106,7 @@ parser.add_argument('--snapshotInterval', type=float, default=1.0,
 parser.add_argument('--SnapshotPrefix', default='',
                     help='Prefix of the weights/snapshots')
 parser.add_argument('--subtractMean', default='none', choices=['image','pixel','none'],
-                    help='Select mean subtraction method. Possible values are 'image', 'pixel' or 'none'')
+                    help="Select mean subtraction method. Possible values are 'image', 'pixel' or 'none'")
 parser.add_argument('--train_db', default='',
                     help='Directory with training file source')
 parser.add_argument('--train_labels',  default='',
