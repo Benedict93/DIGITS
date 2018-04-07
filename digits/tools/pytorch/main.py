@@ -161,7 +161,7 @@ Other augmentations to be added in from torchvision.transforms package
 
 args = parser.parse_args()
 
-args.cuda = not args.no_cuda and torch.cuda.is_available()
+args.cuda = torch.cuda.is_available()
 
 def main():
     if args.validation_interval == 0:
