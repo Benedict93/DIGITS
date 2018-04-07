@@ -165,9 +165,9 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 
 def main():
 	if args.validation_interval == 0:
-    	args.validation_db = None
+       args.validation_db = None
 	if args.seed:
-    	torch.manual_seed(args.seed)
+       torch.manual_seed(args.seed)
 	if args.cuda:
     	torch.cuda.manual_seed(args.seed)
 	batch_size_train = args.batch_size  
