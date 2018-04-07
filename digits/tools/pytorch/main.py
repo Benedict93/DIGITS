@@ -164,12 +164,13 @@ args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
 def main():
-	if args.validation_interval == 0:
-       args.validation_db = None
-	if args.seed:
-       torch.manual_seed(args.seed)
-	if args.cuda:
+    if args.validation_interval == 0:
+    	args.validation_db = None
+	elif args.seed:
+    	torch.manual_seed(args.seed)
+	elif args.cuda:
     	torch.cuda.manual_seed(args.seed)
+    
 	batch_size_train = args.batch_size  
 	batch_size_val = args.batch_size
 	logging.info("Train batch size is %s and validation batch size is %s", batch_size_train, batch_size_val)
