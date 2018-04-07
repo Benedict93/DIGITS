@@ -103,7 +103,7 @@ parser.add_argument('--shuffle', action='store_true', default=False,
                     help='Shuffle records before training')
 parser.add_argument('--snapshotInterval', type=float, default=1.0, 
                     help='Specifies the training epochs to be completed before taking a snapshot')
-parser.add_argument('--SnapshotPrefix', default='',
+parser.add_argument('--snapshotPrefix', default='',
                     help='Prefix of the weights/snapshots')
 parser.add_argument('--subtractMean', default='none', choices=['image','pixel','none'],
                     help="Select mean subtraction method. Possible values are 'image', 'pixel' or 'none'")
