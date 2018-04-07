@@ -279,3 +279,6 @@ for epoch in range(1, args.epoch + 1):
     train(epoch)
     test()
 
+
+if __name__ == '__main__':
+    main()
