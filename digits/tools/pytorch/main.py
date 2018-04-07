@@ -163,83 +163,87 @@ args = parser.parse_args()
 
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
+def main():
 
+	if args.validation_interval == 0:
+    	args.validation_db = None
 
-if args.validation_interval == 0:
-    args.validation_db = None
+	if args.seed:
+	    torch.manual_seed(args.seed)
 
-if args.seed:
-    torch.manual_seed(args.seed)
+	if args.cuda:
+	    torch.cuda.manual_seed(args.seed)
 
-if args.cuda:
-    torch.cuda.manual_seed(args.seed)
+	batch_size_train = args.batch_size  
+	batch_size_val = args.batch_size
+	logging.info("Train batch size is %s and validation batch size is %s", batch_size_train, batch_size_val)
 
-batch_size_train = args.batch_size  
-batch_size_val = args.batch_size
-logging.info("Train batch size is %s and validation batch size is %s", batch_size_train, batch_size_val)
+	# This variable keeps track of next epoch, when to perform validation.
+	next_validation = args.validation_interval
+	logging.info("Training epochs to be completed for each validation : %s", next_validation)
 
-# This variable keeps track of next epoch, when to perform validation.
-next_validation = args.validation_interval
-logging.info("Training epochs to be completed for each validation : %s", next_validation)
+	# This variable keeps track of next epoch, when to save model weights.
+	next_snapshot_save = args.snapshotInterval
+	logging.info("Training epochs to be completed before taking a snapshot : %s", next_snapshot_save)
+	last_snapshot_save_epoch = 0 
 
-# This variable keeps track of next epoch, when to save model weights.
-next_snapshot_save = args.snapshotInterval
-logging.info("Training epochs to be completed before taking a snapshot : %s", next_snapshot_save)
-last_snapshot_save_epoch = 0 
+	snapshot_prefix = args.snapshotPrefix if args.snapshotPrefix else args.network.split('.')[0]
+	logging.info("Model weights will be saved as %s_<EPOCH>_Model.pt", snapshot_prefix)
 
-snapshot_prefix = args.snapshotPrefix if args.snapshotPrefix else args.network.split('.')[0]
-logging.info("Model weights will be saved as %s_<EPOCH>_Model.pt", snapshot_prefix)
+	if not os.path.exists(args.save):
+	    os.makedirs(args.save)
+	    logging.info("Created a directory %s to save all the snapshots", args.save)
 
-if not os.path.exists(args.save):
-    os.makedirs(args.save)
-    logging.info("Created a directory %s to save all the snapshots", args.save)
+	classes = 0
+	nclasses = 0
+	if args.labels_list:
+	    logging.info("Loading label definitions from %s file", args.labels_list)
+	    classes = loadLabels(args.labels_list)
+	    nclasses = len(classes)
+	    if not classes:
+	        logging.error("Reading labels file %s failed.", args.labels_list)
+	        exit(-1)
+	    logging.info("Found %s classes", nclasses)
 
-classes = 0
-nclasses = 0
-if args.labels_list:
-    logging.info("Loading label definitions from %s file", args.labels_list)
-    classes = loadLabels(args.labels_list)
-    nclasses = len(classes)
-    if not classes:
-        logging.error("Reading labels file %s failed.", args.labels_list)
-        exit(-1)
-    logging.info("Found %s classes", nclasses)
+	# Import the network file
+	path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
+	exec(open(path_network).read(), globals())
 
-# Import the network file
-path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
-exec(open(path_network).read(), globals())
+	try:
+	    LeNet
+	except NameError: 
+	    logging.error("The user model class 'LeNet' is not defined.")
+	    exit(-1)
+	if not inspect.isclass(LeNet):  # noqa
+	    logging.error("The user model class 'LeNet' is not a class.")
+	    exit(-1)
 
-try:
-    LeNet
-except NameError: 
-    logging.error("The user model class 'LeNet' is not defined.")
-    exit(-1)
-if not inspect.isclass(LeNet):  # noqa
-    logging.error("The user model class 'LeNet' is not a class.")
-    exit(-1)
+	kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
+	if args.train_db:
+	    train_loader = torch.utils.data.DataLoader(
+	        datasets.MNIST('../data', train=True, download=True,
+	               transform=transforms.Compose([
+	                   transforms.ToTensor(),
+	                   transforms.Normalize((0.1307,), (0.3081,))
+	               ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+	if args.validation_db:
+	    validation_loader = torch.utils.data.DataLoader(
+	        datasets.MNIST('../data', train=False, download=True,
+	               transform=transforms.Compose([
+	                   transforms.ToTensor(),
+	                   transforms.Normalize((0.1307,), (0.3081,))
+	               ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
 
-kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
-if args.train_db:
-    train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=True, download=True,
-               transform=transforms.Compose([
-                   transforms.ToTensor(),
-                   transforms.Normalize((0.1307,), (0.3081,))
-               ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
-if args.validation_db:
-    validation_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=False, download=True,
-               transform=transforms.Compose([
-                   transforms.ToTensor(),
-                   transforms.Normalize((0.1307,), (0.3081,))
-               ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+	model = LeNet()
+	if args.cuda:
+	    model.cuda
 
-model = LeNet()
-if args.cuda:
-    model.cuda
+	if args.optimization == 'sgd' 
+	    optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
 
-if args.optimization == 'sgd' 
-    optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
+	for epoch in range(1, args.epoch + 1):
+	    train(epoch)
+	    test()   
 
 def train(epoch):
     model.train()
@@ -273,11 +277,6 @@ def test():
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(validation_loader.dataset),
         100. * correct / len(validation_loader.dataset)))
-
-
-for epoch in range(1, args.epoch + 1):
-    train(epoch)
-    test()
 
 
 if __name__ == '__main__':
