@@ -191,7 +191,7 @@ class PyTorchTrainTask(TrainTask):
             args.append('--lr_gamma=%s' % self.lr_policy['gamma'])
 
         if self.shuffle:
-            args.append('--shuffle=True')
+            args.append('--shuffle')
 
         if self.crop_size:
             args.append('--croplen=%d' % self.crop_size)
