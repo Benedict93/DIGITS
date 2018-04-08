@@ -158,6 +158,9 @@ parser.add_argument('--augHSVv', type=float, default=0,
 Other augmentations to be added in from torchvision.transforms package
 
 """
+def loadLabels(filename):
+    with open(filename) as f:
+        return f.readlines()
 
 args = parser.parse_args()
 
