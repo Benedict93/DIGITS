@@ -817,8 +817,7 @@ class PyTorchTrainTask(TrainTask):
             if self.use_mean != 'none':
                 mean_file = self.dataset.get_mean_file()
                 assert mean_file is not None, 'Failed to retrieve mean file.'
-                args.append('--mean=%s' % self.dataset.path(mean_file))
-
+                
             if self.use_mean == 'pixel':
                 args.append('--subtractMean=pixel')
             elif self.use_mean == 'image':
