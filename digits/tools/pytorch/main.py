@@ -242,9 +242,8 @@ def main():
 
     for epoch in range(1, args.epoch + 1):
         train(epoch, model, train_loader)
-        test(model, validation_loader)   
 
-def train(epoch, model, train_loader:
+def train(epoch, model, train_loader):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         if args.cuda:
