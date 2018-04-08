@@ -235,7 +235,7 @@ def main():
 
     model = LeNet()
     if args.cuda:
-        model.cuda
+        model.cuda()
 
     if args.optimization == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
