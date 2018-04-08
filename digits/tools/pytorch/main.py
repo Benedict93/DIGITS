@@ -245,6 +245,7 @@ def main():
 
 def train(epoch, model, train_loader, optimizer):
     model.train()
+    log_interval = 10
     for batch_idx, (data, target) in enumerate(train_loader):
         if args.cuda:
             data, target = data.cuda(), target.cuda()
@@ -254,7 +255,7 @@ def train(epoch, model, train_loader, optimizer):
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
-        if batch_idx % args.log_interval == 0:
+        if batch_idx % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.data[0]))
 """
 def test(model, validation_loader):
