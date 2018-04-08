@@ -241,9 +241,9 @@ def main():
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
 
     for epoch in range(1, args.epoch + 1):
-        train(epoch, model, train_loader)
+        train(epoch, model, train_loader, optimizer)
 
-def train(epoch, model, train_loader):
+def train(epoch, model, train_loader, optimizer):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         if args.cuda:
