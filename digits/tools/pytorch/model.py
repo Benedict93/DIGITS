@@ -55,23 +55,14 @@ class Model(object):
         #     self.optimizer
 
     def create_dataloader(self, db_path):
+        self.dataloader = pt_data.LoaderFactory.set_source(db_path)
         self.dataloader.stage = self.stage
         self.dataloader.croplen = self.croplen
         self.dataloader.nclasses = self.nclasses
 
-    @model_property
     def train(self):
         return self._train
 
-
-    @model_property
-    def global_step(self):
-        # Force global_step on the CPU, becaues the GPU's first step will end at 0 instead of 1.
-        with tf.device('/cpu:0'):
-            return tf.get_variable('global_step', [], initializer=tf.constant_initializer(0),
-                                   trainable=False)
-
-    @model_property
     def learning_rate(self):
         # @TODO(tzaman): the learning rate is a function of the global step, so we could
         #  define it entirely in tf ops, instead of a placeholder and feeding.
@@ -104,32 +95,3 @@ class Model(object):
         else:
             logging.error("Invalid optimization flag %s", self._optimization)
             exit(-1)
-
-    def get_tower_losses(self, tower):
-        """
-        Return list of losses
-
-        If user-defined model returns only one loss then this is encapsulated into
-        the expected list of dicts structure
-        """
-
-        if isinstance(tower.loss, list):
-            return tower.loss
-        else:
-            return [{'loss': tower.loss, 'vars': tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)}]
-
-
-class Tower(object):
-
-    def __init__(self, x, y, input_shape, nclasses, is_training, is_inference):
-        self.input_shape = input_shape
-        self.nclasses = nclasses
-        self.is_training = is_training
-        self.is_inference = is_inference
-        self.summaries = []
-        self.x = x
-        self.y = y
-        self.train = None
-
-    def gradientUpdate(self, grad):
-        return grad
