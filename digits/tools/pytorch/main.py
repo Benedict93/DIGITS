@@ -258,7 +258,7 @@ def train(epoch, model, train_loader, optimizer):
         data, target = Variable(data), Variable(target)
         optimizer.zero_grad()
         output = model(data)
-        loss = F.MSELoss(output, target)
+        loss = F.mse_loss(output, target)
         loss.backward()
         optimizer.step()
         if batch_idx % log_interval == 0:
