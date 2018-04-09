@@ -220,22 +220,28 @@ def main():
     if not inspect.isclass(LeNet):  # noqa
         logging.error("The user model class 'LeNet' is not a class.")
         exit(-1)
+    """
+    if FLAGS.train_db:
+                train_model = Model(digits.STAGE_TRAIN, args.croplen, nclasses, args.optimization, args.momentum)
+                train_model.create_dataloader(FLAGS.train_db)
+                train_model.dataloader.setup(FLAGS.train_labels,
+                                             FLAGS.shuffle,
+                                             FLAGS.bitdepth,
+                                             batch_size_train,
+                                             FLAGS.epoch,
+                                             FLAGS.seed)
+                train_model.dataloader.set_augmentation(mean_loader, aug_dict)
+                train_model.create_model(UserModel, stage_scope)  # noqa
+    """
+    train_set = torch.utils.data.TensorDataset(args.train_db)
+    val_set = torch.utils.data.TensorDataset(args.validation_db)
+
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
-        train_loader = torch.utils.data.DataLoader(
-            datasets.MNIST(args.train_db, train=True, download=True,
-                   transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                   ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+        train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
-        validation_loader = torch.utils.data.DataLoader(
-            datasets.MNIST(args.validation_db, train=False, download=True,
-                   transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                   ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+        validation_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
 
     model = LeNet()
     if args.cuda:
