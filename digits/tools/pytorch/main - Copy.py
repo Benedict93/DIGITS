@@ -20,7 +20,7 @@ import math
 import numpy as np
 import os
 
-
+import logging
 import argparse
 
 import torch
@@ -28,6 +28,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
+from torch.utils.data.dataset import Dataset
+
+
 from torchvision import datasets, transforms
 
 
@@ -103,7 +106,7 @@ parser.add_argument('--shuffle', action='store_true', default=False,
                     help='Shuffle records before training')
 parser.add_argument('--snapshotInterval', type=float, default=1.0, 
                     help='Specifies the training epochs to be completed before taking a snapshot')
-parser.add_argument('--SnapshotPrefix', default='',
+parser.add_argument('--snapshotPrefix', default='',
                     help='Prefix of the weights/snapshots')
 parser.add_argument('--subtractMean', default='none', choices=['image','pixel','none'],
                     help="Select mean subtraction method. Possible values are 'image', 'pixel' or 'none'")
@@ -158,91 +161,104 @@ parser.add_argument('--augHSVv', type=float, default=0,
 Other augmentations to be added in from torchvision.transforms package
 
 """
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    level=logging.INFO) 
+                    
+def loadLabels(filename):
+    with open(filename) as f:
+        return f.readlines()
 
 args = parser.parse_args()
 
-args.cuda = not args.no_cuda and torch.cuda.is_available()
+args.cuda = torch.cuda.is_available()
 
+def main():
+    if args.validation_interval == 0:
+        args.validation_db = None
+    if args.seed:
+        torch.manual_seed(args.seed)
+    if args.cuda:
+        torch.cuda.manual_seed(args.seed)
+    batch_size_train = args.batch_size  
+    batch_size_val = args.batch_size
+    logging.info("Train batch size is %s and validation batch size is %s", batch_size_train, batch_size_val)
 
+    # This variable keeps track of next epoch, when to perform validation.
+    next_validation = args.validation_interval
+    logging.info("Training epochs to be completed for each validation : %s", next_validation)
 
-if args.validation_interval == 0:
-    args.validation_db = None
+    # This variable keeps track of next epoch, when to save model weights.
+    next_snapshot_save = args.snapshotInterval
+    logging.info("Training epochs to be completed before taking a snapshot : %s", next_snapshot_save)
+    last_snapshot_save_epoch = 0 
 
-if args.seed:
-    torch.manual_seed(args.seed)
+    snapshot_prefix = args.snapshotPrefix if args.snapshotPrefix else args.network.split('.')[0]
+    logging.info("Model weights will be saved as %s_<EPOCH>_Model.pt", snapshot_prefix)
 
-if args.cuda:
-    torch.cuda.manual_seed(args.seed)
+    if not os.path.exists(args.save):
+        os.makedirs(args.save)
+        logging.info("Created a directory %s to save all the snapshots", args.save)
 
-batch_size_train = args.batch_size  
-batch_size_val = args.batch_size
-logging.info("Train batch size is %s and validation batch size is %s", batch_size_train, batch_size_val)
+    classes = 0
+    nclasses = 0
+    if args.labels_list:
+        logging.info("Loading label definitions from %s file", args.labels_list)
+        classes = loadLabels(args.labels_list)
+        nclasses = len(classes)
+        if not classes:
+            logging.error("Reading labels file %s failed.", args.labels_list)
+            exit(-1)
+        logging.info("Found %s classes", nclasses)
 
-# This variable keeps track of next epoch, when to perform validation.
-next_validation = args.validation_interval
-logging.info("Training epochs to be completed for each validation : %s", next_validation)
+    # Import the network file
+    path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
+    exec(open(path_network).read(), globals())
 
-# This variable keeps track of next epoch, when to save model weights.
-next_snapshot_save = args.snapshotInterval
-logging.info("Training epochs to be completed before taking a snapshot : %s", next_snapshot_save)
-last_snapshot_save_epoch = 0 
-
-snapshot_prefix = args.snapshotPrefix if args.snapshotPrefix else args.network.split('.')[0]
-logging.info("Model weights will be saved as %s_<EPOCH>_Model.pt", snapshot_prefix)
-
-if not os.path.exists(args.save):
-    os.makedirs(args.save)
-    logging.info("Created a directory %s to save all the snapshots", args.save)
-
-classes = 0
-nclasses = 0
-if args.labels_list:
-    logging.info("Loading label definitions from %s file", args.labels_list)
-    classes = loadLabels(args.labels_list)
-    nclasses = len(classes)
-    if not classes:
-        logging.error("Reading labels file %s failed.", args.labels_list)
+    try:
+        LeNet
+    except NameError: 
+        logging.error("The user model class 'LeNet' is not defined.")
         exit(-1)
-    logging.info("Found %s classes", nclasses)
+    if not inspect.isclass(LeNet):  # noqa
+        logging.error("The user model class 'LeNet' is not a class.")
+        exit(-1)
+    """
+    if FLAGS.train_db:
+                train_model = Model(digits.STAGE_TRAIN, args.croplen, nclasses, args.optimization, args.momentum)
+                train_model.create_dataloader(FLAGS.train_db)
+                train_model.dataloader.setup(FLAGS.train_labels,
+                                             FLAGS.shuffle,
+                                             FLAGS.bitdepth,
+                                             batch_size_train,
+                                             FLAGS.epoch,
+                                             FLAGS.seed)
+                train_model.dataloader.set_augmentation(mean_loader, aug_dict)
+                train_model.create_model(UserModel, stage_scope)  # noqa
+    """
+    train_set = torch.utils.data
+    val_set = torch.utils.data
 
-# Import the network file
-path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
-exec(open(path_network).read(), globals())
 
-try:
-    LeNet
-except NameError: 
-    logging.error("The user model class 'LeNet' is not defined.")
-    exit(-1)
-if not inspect.isclass(LeNet):  # noqa
-    logging.error("The user model class 'LeNet' is not a class.")
-    exit(-1)
+    kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
+    if args.train_db:
+        train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+    if args.validation_db:
+        validation_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
 
-kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
-if args.train_db:
-    train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=True, download=True,
-               transform=transforms.Compose([
-                   transforms.ToTensor(),
-                   transforms.Normalize((0.1307,), (0.3081,))
-               ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
-if args.validation_db:
-    validation_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=False, download=True,
-               transform=transforms.Compose([
-                   transforms.ToTensor(),
-                   transforms.Normalize((0.1307,), (0.3081,))
-               ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+    model = LeNet()
+    if args.cuda:
+        model.cuda()
 
-model = LeNet()
-if args.cuda:
-    model.cuda
+    if args.optimization == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
 
-if args.optimization == 'sgd' 
-    optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
+    for epoch in range(1, args.epoch + 1):
+        train(epoch, model, train_loader, optimizer)
 
-def train(epoch):
+def train(epoch, model, train_loader, optimizer):
     model.train()
+    log_interval = 10
     for batch_idx, (data, target) in enumerate(train_loader):
         if args.cuda:
             data, target = data.cuda(), target.cuda()
@@ -252,11 +268,10 @@ def train(epoch):
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
-        if batch_idx % args.log_interval == 0:
-        print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-            epoch, batch_idx * len(data), len(train_loader.dataset),
-            100. * batch_idx / len(train_loader), loss.data[0]))
-def test():
+        if batch_idx % log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.data[0]))
+"""
+def test(model, validation_loader):
     model.eval()
     test_loss = 0
     correct = 0
@@ -273,9 +288,10 @@ def test():
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(validation_loader.dataset),
         100. * correct / len(validation_loader.dataset)))
+"""
 
+if __name__ == '__main__':
+    main()
 
-for epoch in range(1, args.epoch + 1):
-    train(epoch)
-    test()
-
+class ImageDataset(torch.utils.data.Dataset):
+    def _init_(self, )
