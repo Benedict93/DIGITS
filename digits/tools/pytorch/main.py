@@ -213,12 +213,12 @@ def main():
     exec(open(path_network).read(), globals())
 
     try:
-        LeNet
+        Net
     except NameError: 
-        logging.error("The user model class 'LeNet' is not defined.")
+        logging.error("The user model class 'Net' is not defined.")
         exit(-1)
     if not inspect.isclass(LeNet):  # noqa
-        logging.error("The user model class 'LeNet' is not a class.")
+        logging.error("The user model class 'Net' is not a class.")
         exit(-1)
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
@@ -263,6 +263,7 @@ def train(epoch, model, train_loader, optimizer):
         optimizer.step()
         if batch_idx % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.data[0]))
+            logging.info("Training (epoch "  + "): ")
 
 def test(model, validation_loader):
     model.eval()
