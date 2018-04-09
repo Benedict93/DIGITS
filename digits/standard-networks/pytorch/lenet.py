@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class LeNet(nn.Module):
+class Net(nn.Module):
 
     def __init__(self):
         super(LeNet, self).__init__()
@@ -22,7 +22,3 @@ class LeNet(nn.Module):
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
-
-
-net = LeNet()
-print(net)
