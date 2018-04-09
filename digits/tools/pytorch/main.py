@@ -246,6 +246,7 @@ def main():
 
     for epoch in range(1, args.epoch + 1):
         train(epoch, model, train_loader, optimizer)
+        test(model, validation_loader)
 
 
 def train(epoch, model, train_loader, optimizer):
@@ -262,12 +263,12 @@ def train(epoch, model, train_loader, optimizer):
         optimizer.step()
         if batch_idx % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.data[0]))
-"""
+
 def test(model, validation_loader):
     model.eval()
     test_loss = 0
     correct = 0
-    for data, target in test_loader:
+    for data, target in validation_loader:
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)
@@ -280,7 +281,6 @@ def test(model, validation_loader):
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(validation_loader.dataset),
         100. * correct / len(validation_loader.dataset)))
-"""
 
 
 if __name__ == '__main__':

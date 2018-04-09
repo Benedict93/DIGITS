@@ -37,8 +37,8 @@ class Model(object):
 
     This class is executed to start a tensorflow workflow.
     """
-    def __init__(self, stage, croplen, nclasses, optimization=None, momentum=None, reuse_variable=False):
-        self.stage = stage
+    def __init__(self, model, croplen, nclasses, optimization=None, momentum=None):
+        self.model = model
         self.croplen = croplen
         self.nclasses = nclasses
         self.dataloader = None
@@ -46,7 +46,6 @@ class Model(object):
         self._optimization = optimization
         self._momentum = momentum
         self._train = None
-        self._reuse = reuse_variable
 
         # Touch to initialize
         # if optimization:
@@ -75,23 +74,7 @@ class Model(object):
         logging.info("Optimizer:%s", self._optimization)
         if self._optimization == 'sgd':
             return tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate)
-        elif self._optimization == 'adadelta':
-            return tf.train.AdadeltaOptimizer(learning_rate=self.learning_rate)
-        elif self._optimization == 'adagrad':
-            return tf.train.AdagradOptimizer(learning_rate=self.learning_rate)
-        elif self._optimization == 'adagradda':
-            return tf.train.AdagradDAOptimizer(learning_rate=self.learning_rate,
-                                               global_step=self.global_step)
-        elif self._optimization == 'momentum':
-            return tf.train.MomentumOptimizer(learning_rate=self.learning_rate,
-                                              momentum=self._momentum)
-        elif self._optimization == 'adam':
-            return tf.train.AdamOptimizer(learning_rate=self.learning_rate)
-        elif self._optimization == 'ftrl':
-            return tf.train.FtrlOptimizer(learning_rate=self.learning_rate)
-        elif self._optimization == 'rmsprop':
-            return tf.train.RMSPropOptimizer(learning_rate=self.learning_rate,
-                                             momentum=self._momentum)
+            return optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=args.momentum)
         else:
             logging.error("Invalid optimization flag %s", self._optimization)
             exit(-1)

@@ -317,13 +317,6 @@ class PyTorchTrainTask(TrainTask):
                     self.logger.error('Unknown stage found other than training or validation: %s' % (stage))
             self.logger.debug(message)
             return True
-
-        # timeline trace saved
-        if message.startswith('Timeline trace written to'):
-            self.logger.info(message)
-            self.detect_timeline_traces()
-            return True
-        
 		
         # snapshot saved
         if self.saving_snapshot:
