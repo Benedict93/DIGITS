@@ -226,7 +226,7 @@ def main():
         train_loader = torch.utils.data.DataLoader(args.train_db, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
         validation_loader = torch.utils.data.DataLoader(
-            validation_db, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+            args.validation_db, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
 
     model = LeNet()
     if args.cuda:
