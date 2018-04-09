@@ -217,7 +217,7 @@ def main():
     except NameError: 
         logging.error("The user model class 'Net' is not defined.")
         exit(-1)
-    if not inspect.isclass(LeNet):  # noqa
+    if not inspect.isclass(Net):  # noqa
         logging.error("The user model class 'Net' is not a class.")
         exit(-1)
 
@@ -237,7 +237,7 @@ def main():
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     
-    model = LeNet()
+    model = Net()
     if args.cuda:
         model.cuda()
 
