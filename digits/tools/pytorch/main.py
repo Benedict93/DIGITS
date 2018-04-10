@@ -288,7 +288,7 @@ def train(epoch, model, train_loader, optimizer):
                        100. * batch_idx / len(loader), losses.val))
             logging.info("Training (epoch " + str(epoch) + "):" + "loss =" + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + str(accuracy.avg))
 
- def test(model, validation_loader):
+def test(model, validation_loader):
     losses = average_meter()
     accuracy = average_meter()
 
@@ -309,6 +309,23 @@ def train(epoch, model, train_loader, optimizer):
 
     print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
         losses.avg, int(accuracy.sum), len(loader.dataset), 100. * accuracy.avg))
+
+class average_meter(object):
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
 
 if __name__ == '__main__':
         main()
