@@ -166,7 +166,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
 #CONSTANTS
 log_interval = 8
 step = 0
-current_epoch = 0
+
 
 def loadLabels(filename):
     with open(filename) as f:
@@ -179,6 +179,8 @@ args.cuda = torch.cuda.is_available()
 
 
 def main():
+    current_epoch = 0
+    
     if args.validation_interval == 0:
         args.validation_db = None
     if args.seed:
