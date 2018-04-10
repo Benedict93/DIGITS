@@ -165,7 +165,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
 
 #CONSTANTS
 log_interval = 8
-step = 0
+
 
 
 def loadLabels(filename):
@@ -279,7 +279,8 @@ def main():
 def train(epoch, model, train_loader, optimizer):
     losses = average_meter()
     accuracy = average_meter()
-
+    step = 0
+    
     model.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
