@@ -249,8 +249,8 @@ def main():
 
     for epoch in range(1, args.epoch + 1):
         adjust_learning_rate(optimizer, epoch)
-        train(epoch, model, criterion, train_loader, optimizer)
-        prec1 = validate(val_loader, model, criterion)
+        train(epoch, model, train_loader, optimizer)
+        prec1 = validate(val_loader, model)
         is_best = prec1 > best_prec1
         best_prec1 = max(prec1, best_prec1)
         save_checkpoint({
@@ -260,10 +260,10 @@ def main():
             'best_prec1': best_prec1,
             'optimizer' : optimizer.state_dict(),
         }, is_best)
-        validate(epoch, model, criterion)
+        validate(epoch, model)
 
 
-def train(epoch, model, criterion, train_loader, optimizer):
+def train(epoch, model, train_loader, optimizer):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
