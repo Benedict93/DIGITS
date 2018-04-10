@@ -161,7 +161,9 @@ Other augmentations to be added in from torchvision.transforms package
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO) 
-                    
+
+best_prec1 = 0
+
 def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
@@ -171,6 +173,7 @@ args = parser.parse_args()
 args.cuda = torch.cuda.is_available()
 
 def main():
+    global best_prec1
     if args.validation_interval == 0:
         args.validation_db = None
     if args.seed:
@@ -221,7 +224,7 @@ def main():
         logging.error("The user model class 'Net' is not a class.")
         exit(-1)
 
-    kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
+    kwargs = {'num_workers': 4, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
         train_loader = torch.utils.data.DataLoader(
             datasets.MNIST('../data', train=True, download=True,
@@ -230,7 +233,7 @@ def main():
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
-        validation_loader = torch.utils.data.DataLoader(
+        val_loader = torch.utils.data.DataLoader(
             datasets.MNIST('../data', train=False, download=True,
                    transform=transforms.Compose([
                        transforms.ToTensor(),
@@ -240,49 +243,150 @@ def main():
     model = Net()
     if args.cuda:
         model.cuda()
-
+    # define loss function and optimizer
+    criterion = F.nll_loss().cuda()
     if args.optimization == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
 
     for epoch in range(1, args.epoch + 1):
-        train(epoch, model, train_loader, optimizer)
-        test(model, validation_loader)
+        adjust_learning_rate(optimizer, epoch)
+        train(epoch, model, criterion, train_loader, optimizer)
+        prec1 = validate(val_loader, model, criterion)
+        is_best = prec1 > best_prec1
+        best_prec1 = max(prec1, best_prec1)
+        save_checkpoint({
+            'epoch': epoch + 1,
+            'arch': args.arch,
+            'state_dict': model.state_dict(),
+            'best_prec1': best_prec1,
+            'optimizer' : optimizer.state_dict(),
+        }, is_best)
+        validate(epoch, model, criterion)
 
 
-def train(epoch, model, train_loader, optimizer):
+def train(epoch, model, criterion, train_loader, optimizer):
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
+
+    #switch to train mode
     model.train()
     log_interval = 10
+
+    end = time.time()
     for batch_idx, (data, target) in enumerate(train_loader):
+        # measure data loading time
+        data_time.update(time.time() - end)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
-        optimizer.zero_grad()
+        #compute output
         output = model(data)
-        loss = F.nll_loss(output, target)
+        loss = criterion(output, target)
+
+        # measure accuracy and record loss
+        prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
+        losses.update(loss.data[0], input.size(0))
+        top1.update(prec1[0], input.size(0))
+        top5.update(prec5[0], input.size(0))
+
+        #compute gradient and do SGD step
+        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
+         # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+
         if batch_idx % log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.data[0]))
+            print('Epoch: [{0}][{1}/{2}]\t'
+                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                  'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+                   epoch, batch_idx, len(train_loader), batch_time=batch_time,
+                   data_time=data_time, loss=losses, top1=top1, top5=top5))
             logging.info("Training (epoch "  + "): ")
 
-def test(model, validation_loader):
+def validate(model, criterion, val_loader, ):
+    batch_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
+    # switch to evaluate mode
     model.eval()
-    test_loss = 0
-    correct = 0
-    for data, target in validation_loader:
+
+    end = time.time()
+
+    for batch_idx, (data, target) in enumerate(val_loader):
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target)
+        data, target = Variable(data, volatile=True), Variable(target, volatile=True)
+        
+        #compute output
         output = model(data)
-        test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
-        pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
-        correct += pred.eq(target.data.view_as(pred)).long().cpu().sum()
+        loss = criterion(output, target)
 
-    test_loss /= len(validation_loader.dataset)
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, len(validation_loader.dataset),
-        100. * correct / len(validation_loader.dataset)))
+        # measure accuracy and record loss
+        prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
+        losses.update(loss.data[0], input.size(0))
+        top1.update(prec1[0], input.size(0))
+        top5.update(prec5[0], input.size(0))
 
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        if batch_idx % log_interval == 0:
+            print('Test: [{0}/{1}]\t'
+                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                  'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+                   i, len(val_loader), batch_time=batch_time, loss=losses,
+                   top1=top1, top5=top5))
+
+
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+def adjust_learning_rate(optimizer, epoch):
+    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+    lr = args.lr * (0.1 ** (epoch // 30))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
 
 if __name__ == '__main__':
     main()
