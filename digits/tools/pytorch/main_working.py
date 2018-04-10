@@ -246,7 +246,8 @@ def main():
 
     for epoch in range(1, args.epoch + 1):
         train(epoch, model, train_loader, optimizer)
-        test(model, validation_loader)
+        if epoch == epoch + args.validation_interval:
+            test(model, validation_loader)
 
 
 def train(epoch, model, train_loader, optimizer):
