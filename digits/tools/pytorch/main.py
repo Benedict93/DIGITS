@@ -216,7 +216,9 @@ def main():
             exit(-1)
         logging.info("Found %s classes", nclasses)
 
-    
+    # Import the network file
+    path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
+    exec(open(path_network).read(), globals())
 
     try:
         Net
