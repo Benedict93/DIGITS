@@ -224,14 +224,14 @@ def main():
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
         train_loader = torch.utils.data.DataLoader(
-            datasets.ImageFolder(args.train_db, 
+            datasets..MNIST('../data', train=True, download=True,
                    transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
         validation_loader = torch.utils.data.DataLoader(
-            datasets.ImageFolder(args.validation_db,
+            datasets..MNIST('../data', train=false, download=True,
                    transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
@@ -254,11 +254,10 @@ def main():
         
 
 
-
-
 def train(epoch, model, train_loader, optimizer):
     model.train()
     log_interval = 10
+    correct = 0
     for batch_idx, (data, target) in enumerate(train_loader):
         if args.cuda:
             data, target = data.cuda(), target.cuda()
@@ -268,9 +267,11 @@ def train(epoch, model, train_loader, optimizer):
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
+        pred = output.data.max(1, keepdim=True)[1]  # get the index of the max log-probability
+        correct += pred.eq(target.data.view_as(pred)).long().cpu().sum()
         if batch_idx % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.data[0]))
-            logging.info("Training (epoch "  + "): ")
+            logging.info("Training (epoch" + epoch + "):" + "loss = " + loss.data[0] + ", lr = " + args.lr_base_rate + ", accuracy = " + correct )
 
 def test(model, validation_loader):
     model.eval()
