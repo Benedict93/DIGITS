@@ -246,19 +246,6 @@ def main():
                                transforms.ToTensor(),
                                transforms.Normalize((0.1307,), (0.3081,))
                            ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
-
-    # epoch value will be calculated for every batch size. To maintain unique epoch value between batches,
-    # it needs to be rounded to the required number of significant digits.
-    epoch_round = 0  # holds the required number of significant digits for round function.
-    tmp_batchsize = batch_size_train*log_interval
-    while tmp_batchsize <= len(train_loader.dataset):
-            tmp_batchsize = tmp_batchsize * 10
-            epoch_round += 1
-    logging.info("While logging, epoch value will be rounded to %s significant digits", epoch_round)
-
-    # Import the network file
-    path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
-    exec(open(path_network).read(), globals())
     model = Net()
     if args.cuda:
         model.cuda()
@@ -268,25 +255,21 @@ def main():
 
     logging.info('Started training the model')
 
-    for epoch in range(0, args.epoch):
-        train(epoch, model, train_loader, optimizer, batch_size_train, epoch_round)
+    for epoch in range(1, args.epoch+1):
+        train(epoch, model, train_loader, optimizer, args.epoch)
         if args.validation_db and epoch >= next_validation:
             test(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
 
 
-def train(epoch, model, train_loader, optimizer, batch_size_train, epoch_round):
+def train(epoch, model, train_loader, optimizer, total_epochs):
     losses = average_meter()
     accuracy = average_meter()
-    step = 0
 
     model.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
-        step = step + 1
-        current_epoch = round((step * batch_size_train) / len(train_loader.dataset), epoch_round)
-
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
@@ -304,6 +287,7 @@ def train(epoch, model, train_loader, optimizer, batch_size_train, epoch_round):
         optimizer.step()
 
         if batch_idx % log_interval == 0:
+            current_epoch = total_epoch / 10
             print('Train Epoch: {}\t'
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
                  'Loss: {:.6f}'.format(
