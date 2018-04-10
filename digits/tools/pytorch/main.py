@@ -285,7 +285,7 @@ def train(epoch, model, train_loader, optimizer, batch_size_train, epoch_round):
 
     for batch_idx, (data, target) in enumerate(train_loader):
         step = step + 1
-        current_epoch = round((step * batch_size_train) / (train_loader.dataset), epoch_round)
+        current_epoch = round((step * batch_size_train) / len(train_loader.dataset), epoch_round)
 
         if args.cuda:
             data, target = data.cuda(), target.cuda()
