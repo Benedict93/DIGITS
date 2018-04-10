@@ -281,7 +281,7 @@ def train(epoch, model, train_loader, optimizer):
         optimizer.step()
 
         if batch_idx % log_interval == 0:
-            rint('Train Epoch: {}\t'
+            print('Train Epoch: {}\t'
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
                  'Loss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(loader.dataset),
