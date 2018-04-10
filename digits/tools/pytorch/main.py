@@ -286,9 +286,9 @@ def train(epoch, model, train_loader, optimizer):
                  'Loss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), losses.val))
-            logging.info("Training (epoch " + str(epoch) + "):" + "loss =" + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + str(accuracy.avg))
+            logging.info("Training (epoch " + str(epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
 
-def test(model, validation_loader):
+def test(epoch, model, validation_loader):
     losses = average_meter()
     accuracy = average_meter()
 
