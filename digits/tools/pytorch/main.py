@@ -163,6 +163,11 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     level=logging.INFO)
 
 
+#CONSTANTS
+log_interval = 8
+step = 0
+current_epoch = 0
+
 def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
@@ -211,9 +216,7 @@ def main():
             exit(-1)
         logging.info("Found %s classes", nclasses)
 
-    # Import the network file
-    path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
-    exec(open(path_network).read(), globals())
+    
 
     try:
         Net
@@ -240,6 +243,18 @@ def main():
                                transforms.Normalize((0.1307,), (0.3081,))
                            ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
 
+    # epoch value will be calculated for every batch size. To maintain unique epoch value between batches,
+    # it needs to be rounded to the required number of significant digits.
+    epoch_round = 0  # holds the required number of significant digits for round function.
+    tmp_batchsize = batch_size_train*log_interval
+    while tmp_batchsize <= len(train_loader.dataset):
+            tmp_batchsize = tmp_batchsize * 10
+            epoch_round += 1
+    logging.info("While logging, epoch value will be rounded to %s significant digits", epoch_round)
+
+    # Import the network file
+    path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
+    exec(open(path_network).read(), globals())
     model = Net()
     if args.cuda:
         model.cuda()
@@ -247,11 +262,14 @@ def main():
     if args.optimization == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
 
-    for epoch in range(1, args.epoch + 1):
-        train(epoch, model, train_loader, optimizer)
-        current_epoch = epoch
+    logging.info('Started training the model')
+
+    for epoch in range(current_epoch, args.epoch):
+        train(current_epoch, model, train_loader, optimizer)
+        step = step + 1
+        current_epoch = round((step * batch_size_train) / (train_loader.dataset), epoch_round)
         if args.validation_db and current_epoch >= next_validation:
-            test(epoch, model, validation_loader)
+            test(current_epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
 
@@ -259,7 +277,6 @@ def main():
 def train(epoch, model, train_loader, optimizer):
     losses = average_meter()
     accuracy = average_meter()
-    log_interval = 10
 
     model.train()
 
@@ -286,7 +303,7 @@ def train(epoch, model, train_loader, optimizer):
                  'Loss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), losses.val))
-            logging.info("Training (epoch " + str(epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
+            logging.info("Training (epoch " + str(epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
 def test(epoch, model, validation_loader):
     losses = average_meter()
@@ -309,6 +326,7 @@ def test(epoch, model, validation_loader):
 
     print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
         losses.avg, int(accuracy.sum), len(validation_loader.dataset), 100. * accuracy.avg))
+    logging.info("Validation (epoch " + str(epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
 
 class average_meter(object):
 
