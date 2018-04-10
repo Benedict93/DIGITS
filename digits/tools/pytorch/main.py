@@ -271,7 +271,7 @@ def train(epoch, model, train_loader, optimizer):
         correct += pred.eq(target.data.view_as(pred)).long().cpu().sum()
         if batch_idx % log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.data[0]))
-            logging.info("Training (epoch" + epoch + "):" + "loss = " + loss.data[0] + ", lr = " + args.lr_base_rate + ", accuracy = " + correct )
+            logging.info("Training (epoch" + float(epoch) + "):" + "loss = " + loss.data[0] + ", lr = " + args.lr_base_rate + ", accuracy = " + correct )
 
 def test(model, validation_loader):
     model.eval()
