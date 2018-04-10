@@ -243,8 +243,7 @@ def main():
     model = Net()
     if args.cuda:
         model.cuda()
-    # define loss function and optimizer
-    criterion = F.nll_loss().cuda()
+    # define optimizer
     if args.optimization == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
 
@@ -284,7 +283,7 @@ def train(epoch, model, criterion, train_loader, optimizer):
         data, target = Variable(data), Variable(target)
         #compute output
         output = model(data)
-        loss = criterion(output, target)
+        loss = F.nll_loss(output, target)
 
         # measure accuracy and record loss
         prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
@@ -312,7 +311,7 @@ def train(epoch, model, criterion, train_loader, optimizer):
                    data_time=data_time, loss=losses, top1=top1, top5=top5))
             logging.info("Training (epoch "  + "): ")
 
-def validate(model, criterion, val_loader, ):
+def validate(model, val_loader, ):
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
@@ -329,7 +328,7 @@ def validate(model, criterion, val_loader, ):
         
         #compute output
         output = model(data)
-        loss = criterion(output, target)
+        loss = F.nll_loss(output, target)
 
         # measure accuracy and record loss
         prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
