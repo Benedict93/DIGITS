@@ -246,8 +246,14 @@ def main():
 
     for epoch in range(1, args.epoch + 1):
         train(epoch, model, train_loader, optimizer)
-        if epoch == epoch + args.validation_interval:
+        current_epoch = epoch
+        if args.validation_db and current_epoch >= next_validation:
             test(model, validation_loader)
+            next_validation = (round(float(current_epoch)/FLAGS.validation_interval) + 1) * \
+                            FLAGS.validation_interval
+        
+
+
 
 
 def train(epoch, model, train_loader, optimizer):
