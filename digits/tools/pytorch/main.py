@@ -269,18 +269,18 @@ def main():
     logging.info('Started training the model')
 
     for epoch in range(0, args.epoch):
-        train(epoch, model, train_loader, optimizer)
+        train(epoch, model, train_loader, optimizer, batch_size_train, epoch_round)
         if args.validation_db and epoch >= next_validation:
             test(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
 
 
-def train(epoch, model, train_loader, optimizer):
+def train(epoch, model, train_loader, optimizer, batch_size_train, epoch_round):
     losses = average_meter()
     accuracy = average_meter()
     step = 0
-    
+
     model.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
