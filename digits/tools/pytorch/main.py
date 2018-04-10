@@ -287,7 +287,7 @@ def train(epoch, model, train_loader, optimizer, total_epochs):
         optimizer.step()
 
         if batch_idx % log_interval == 0:
-            current_epoch = float (total_epochs / 10)
+            current_epoch = total_epochs / 10.0
             print('Train Epoch: {}\t'
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
                  'Loss: {:.6f}'.format(
