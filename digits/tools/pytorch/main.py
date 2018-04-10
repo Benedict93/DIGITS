@@ -164,7 +164,7 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
 
 
 #CONSTANTS
-log_interval = 8
+log_interval = 10
 
 
 
