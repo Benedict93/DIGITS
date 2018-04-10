@@ -285,7 +285,7 @@ def train(epoch, model, train_loader, optimizer):
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
                  'Loss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
-                       100. * batch_idx / len(loader), losses.val))
+                       100. * batch_idx / len(train_loader), losses.val))
             logging.info("Training (epoch " + str(epoch) + "):" + "loss =" + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + str(accuracy.avg))
 
 def test(model, validation_loader):
