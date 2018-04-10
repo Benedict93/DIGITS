@@ -95,13 +95,13 @@ parser.add_argument('--networkDirectory', default='',
                     help='Directory in which network exists')
 parser.add_argument('--optimization', default='sgd', choices=['sgd','nag','adagrad','rmsprop','adadelta','adam','sparseadam','adamax','asgd','lbfgs','rprop'],
                     help='Optimization method')
-parser.add_argument('--save', default='results', 
+parser.add_argument('--save', default='results',
                     help='Save directory')
-parser.add_argument('--seed', type=int, default=0, 
+parser.add_argument('--seed', type=int, default=0,
                     help='Fixed input seed for repeatable experiments (default:0)')
-parser.add_argument('--shuffle', action='store_true', default=False, 
+parser.add_argument('--shuffle', action='store_true', default=False,
                     help='Shuffle records before training')
-parser.add_argument('--snapshotInterval', type=float, default=1.0, 
+parser.add_argument('--snapshotInterval', type=float, default=1.0,
                     help='Specifies the training epochs to be completed before taking a snapshot')
 parser.add_argument('--snapshotPrefix', default='',
                     help='Prefix of the weights/snapshots')
@@ -111,13 +111,13 @@ parser.add_argument('--train_db', default='',
                     help='Directory with training file source')
 parser.add_argument('--train_labels',  default='',
                     help='Directory with an optional and seperate labels file source for training')
-parser.add_argument('--validation_db', default='', 
+parser.add_argument('--validation_db', default='',
                     help='Directory with validation file source')
 parser.add_argument('--validation_labels', default='',
                     help='Directory with an optional and seperate labels file source for validation')
 parser.add_argument('--visualizeModelPath', default='',
                     help='Constructs the current model for visualization')
-parser.add_argument('--visualize_inf', action='store_true', default=False, 
+parser.add_argument('--visualize_inf', action='store_true', default=False,
                     help='Will output weights and activations for an inference job.')
 parser.add_argument('--weights', default='',
                     help='Filename for weights of a model to use for fine-tuning')
@@ -128,7 +128,7 @@ parser.add_argument('--bitdepth', type=int, default=8,
 
 parser.add_argument('--lr_base_rate', type=float, default=0.01,
                     help='Learning Rate')
-parser.add_argument('--lr_policy', default='fixed', choices=['fixed','step','exp','inv','multistep','poly','sigmoid'], 
+parser.add_argument('--lr_policy', default='fixed', choices=['fixed','step','exp','inv','multistep','poly','sigmoid'],
                     help='Learning rate policy. (fixed, step, exp, inv, multistep, poly, sigmoid)')
 parser.add_argument('--lr_gamma', type=float, default=-1,
                     help='Required to calculate learning rate. Applies to: (step, exp, inv, multistep, sigmoid)')
@@ -145,7 +145,7 @@ parser.add_argument('--augNoise', type=float, default=0,
                     help='The stddev of Noise in AWGN as pre-processing augmentation')
 parser.add_argument('--augContrast', type=float, default=0,
                     help='The contrast factors bounds as sampled from a random-uniform distribution as pre-processing  augmentation')
-parser.add_argument('--augWhitening', action='store_true', default=False, 
+parser.add_argument('--augWhitening', action='store_true', default=False,
                     help='Performs per-image whitening by subtracting off its own mean and dividing by its own standard deviation')
 parser.add_argument('--augHSVhg', type=float, default=0,
                     help='The stddev of HSV Hue shift as pre-processing  augmentation')
@@ -160,8 +160,8 @@ Other augmentations to be added in from torchvision.transforms package
 """
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
-                    level=logging.INFO) 
-                    
+                    level=logging.INFO)
+
 def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
@@ -177,7 +177,7 @@ def main():
         torch.manual_seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
-    batch_size_train = args.batch_size  
+    batch_size_train = args.batch_size
     batch_size_val = args.batch_size
     logging.info("Train batch size is %s and validation batch size is %s", batch_size_train, batch_size_val)
 
@@ -188,7 +188,7 @@ def main():
     # This variable keeps track of next epoch, when to save model weights.
     next_snapshot_save = args.snapshotInterval
     logging.info("Training epochs to be completed before taking a snapshot : %s", next_snapshot_save)
-    last_snapshot_save_epoch = 0 
+    last_snapshot_save_epoch = 0
 
     snapshot_prefix = args.snapshotPrefix if args.snapshotPrefix else args.network.split('.')[0]
     logging.info("Model weights will be saved as %s_<EPOCH>_Model.pt", snapshot_prefix)
@@ -214,7 +214,7 @@ def main():
 
     try:
         Net
-    except NameError: 
+    except NameError:
         logging.error("The user model class 'Net' is not defined.")
         exit(-1)
     if not inspect.isclass(Net):  # noqa
@@ -236,7 +236,7 @@ def main():
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
-    
+
     model = Net()
     if args.cuda:
         model.cuda()
@@ -251,44 +251,62 @@ def main():
             test(model, validation_loader)
             next_validation = (round(float(current_epoch)/args.validation_interval) + 1) * \
                             args.validation_interval
-        
+
 
 
 def train(epoch, model, train_loader, optimizer):
-    model.train()
+    losses = average_meter()
+    accuracy = average_meter()
     log_interval = 10
-    correct = 0
+
+    model.train()
+
     for batch_idx, (data, target) in enumerate(train_loader):
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
-        optimizer.zero_grad()
+        
         output = model(data)
         loss = F.nll_loss(output, target)
+        losses.update(loss.data[0], data.size(0))
+
+        pred = output.data.max(1)[1]
+        prec = pred.eq(target.data).cpu().sum()
+        accuracy.update(float(prec) / data.size(0), data.size(0))
+
+        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        pred = output.data.max(1, keepdim=True)[1]  # get the index of the max log-probability
-        correct += pred.eq(target.data.view_as(pred)).long().cpu().sum()
+
         if batch_idx % log_interval == 0:
-            logging.info("Training (epoch" + str(epoch) + "):" + "loss = " + str(loss.data[0]) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + str(100. * correct / len(train_loader.dataset)))
+           rint('Train Epoch: {}\t'
+                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
+                  'Loss: {:.6f}'.format(
+                      epoch, batch_idx * len(data), len(loader.dataset),
+                      100. * batch_idx / len(loader), losses.val))
+            logging.info("Training (epoch " + str(epoch) + "):" + "loss =" + str(losses.val) ", lr = " + str(args.lr_base_rate) + ", accuracy = " + str(accuracy.avg))
 
 def test(model, validation_loader):
+    losses = average_meter()
+    accuracy = average_meter()
+
     model.eval()
-    test_loss = 0
-    correct = 0
+    
     for data, target in validation_loader:
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target)
-        output = model(data)
-        test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
-        pred = output.data.max(1, keepdim=True)[1] # get the index of the max log-probability
-        correct += pred.eq(target.data.view_as(pred)).long().cpu().sum()
+        data, target = Variable(data, volatile=True), Variable(target, volatile=True)
 
-    test_loss /= len(validation_loader.dataset)
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, len(validation_loader.dataset),
-        100. * correct / len(validation_loader.dataset)))
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        losses.update(loss.data[0], data.size(0))
+
+        pred = output.data.max(1)[1]
+        prec = pred.eq(target.data).cpu().sum()
+        accuracy.update(float(prec) / data.size(0), data.size(0))
+
+    print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
+        losses.avg, int(accuracy.sum), len(loader.dataset), 100. * accuracy.avg))
 
 
 if __name__ == '__main__':
