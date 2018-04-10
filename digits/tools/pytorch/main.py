@@ -216,8 +216,6 @@ def main():
             exit(-1)
         logging.info("Found %s classes", nclasses)
 
-    
-
     try:
         Net
     except NameError:
