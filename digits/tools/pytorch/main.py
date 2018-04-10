@@ -249,8 +249,8 @@ def main():
         current_epoch = epoch
         if args.validation_db and current_epoch >= next_validation:
             test(model, validation_loader)
-            next_validation = (round(float(current_epoch)/FLAGS.validation_interval) + 1) * \
-                            FLAGS.validation_interval
+            next_validation = (round(float(current_epoch)/args.validation_interval) + 1) * \
+                            args.validation_interval
         
 
 
