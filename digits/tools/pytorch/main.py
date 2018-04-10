@@ -224,14 +224,14 @@ def main():
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
         train_loader = torch.utils.data.DataLoader(
-            datasets..MNIST('../data', train=True, download=True,
+            datasets.MNIST('../data', train=True, download=True,
                    transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
                    ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
         validation_loader = torch.utils.data.DataLoader(
-            datasets..MNIST('../data', train=false, download=True,
+            datasets.MNIST('../data', train=false, download=True,
                    transform=transforms.Compose([
                        transforms.ToTensor(),
                        transforms.Normalize((0.1307,), (0.3081,))
