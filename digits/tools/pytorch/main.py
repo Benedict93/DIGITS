@@ -30,8 +30,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 
-
-#define model parameters for the model in PyTorch?? Each to either have a initial value!
+# define model parameters for the model in PyTorch?? Each to either have a initial value!
 """
 #Basic Model Parameters
 
@@ -77,23 +76,25 @@ parser = argparse.ArgumentParser(description='Process model parameters in Pytorc
 # Basic Model Parameters
 parser.add_argument('--batch_size', type=int, default=16,
                     help='input batch size for training (default: 16)')
-parser.add_argument('--croplen', type=int, default=0, 
+parser.add_argument('--croplen', type=int, default=0,
                     help='Crop (x and y). A zero value means no cropping will be applied (default: 0)')
-parser.add_argument('--epoch', type=int, default=10, 
+parser.add_argument('--epoch', type=int, default=10,
                     help='Number of epochs to train, -1 for unbounded')
-parser.add_argument('--inference_db', default='', 
+parser.add_argument('--inference_db', default='',
                     help='Directory with inference file source')
-parser.add_argument('--validation_interval', type=int, default=1, 
+parser.add_argument('--validation_interval', type=int, default=1,
                     help='Number of train epochs to complete, to perform one validation (default: 1)')
-parser.add_argument('--labels_list', default='', 
+parser.add_argument('--labels_list', default='',
                     help='Text file listing label definitions')
-parser.add_argument('--momentum', type=float, default=0.9, 
-                    help='SGD momentum (default: 0.9)') # Not used by DIGITS front-end
-parser.add_argument('--network', default='', 
+parser.add_argument('--momentum', type=float, default=0.9,
+                    help='SGD momentum (default: 0.9)')  # Not used by DIGITS front-end
+parser.add_argument('--network', default='',
                     help='File containing network (model)')
-parser.add_argument('--networkDirectory', default='', 
+parser.add_argument('--networkDirectory', default='',
                     help='Directory in which network exists')
-parser.add_argument('--optimization', default='sgd', choices=['sgd','nag','adagrad','rmsprop','adadelta','adam','sparseadam','adamax','asgd','lbfgs','rprop'],
+parser.add_argument('--optimization', default='sgd',
+                    choices=['sgd', 'nag', 'adagrad', 'rmsprop', 'adadelta', 'adam', 'sparseadam', 'adamax', 'asgd',
+                             'lbfgs', 'rprop'],
                     help='Optimization method')
 parser.add_argument('--save', default='results',
                     help='Save directory')
@@ -105,11 +106,11 @@ parser.add_argument('--snapshotInterval', type=float, default=1.0,
                     help='Specifies the training epochs to be completed before taking a snapshot')
 parser.add_argument('--snapshotPrefix', default='',
                     help='Prefix of the weights/snapshots')
-parser.add_argument('--subtractMean', default='none', choices=['image','pixel','none'],
+parser.add_argument('--subtractMean', default='none', choices=['image', 'pixel', 'none'],
                     help="Select mean subtraction method. Possible values are 'image', 'pixel' or 'none'")
 parser.add_argument('--train_db', default='',
                     help='Directory with training file source')
-parser.add_argument('--train_labels',  default='',
+parser.add_argument('--train_labels', default='',
                     help='Directory with an optional and seperate labels file source for training')
 parser.add_argument('--validation_db', default='',
                     help='Directory with validation file source')
@@ -122,13 +123,13 @@ parser.add_argument('--visualize_inf', action='store_true', default=False,
 parser.add_argument('--weights', default='',
                     help='Filename for weights of a model to use for fine-tuning')
 
-
 parser.add_argument('--bitdepth', type=int, default=8,
                     help='Specifies an image bitdepth')
 
 parser.add_argument('--lr_base_rate', type=float, default=0.01,
                     help='Learning Rate')
-parser.add_argument('--lr_policy', default='fixed', choices=['fixed','step','exp','inv','multistep','poly','sigmoid'],
+parser.add_argument('--lr_policy', default='fixed',
+                    choices=['fixed', 'step', 'exp', 'inv', 'multistep', 'poly', 'sigmoid'],
                     help='Learning rate policy. (fixed, step, exp, inv, multistep, poly, sigmoid)')
 parser.add_argument('--lr_gamma', type=float, default=-1,
                     help='Required to calculate learning rate. Applies to: (step, exp, inv, multistep, sigmoid)')
@@ -137,9 +138,8 @@ parser.add_argument('--lr_power', type=float, default=float('Inf'),
 parser.add_argument('--lr_stepvalues', default='',
                     help='Required to calculate stepsize of the learning rate. Applies to: (step, multistep, sigmoid). For the multistep lr_policy you can input multiple values seperated by commas')
 
-
-#Augmentation
-parser.add_argument('--augFlip', default='none', choices =['none', 'fliplr', 'flipup', 'fliplrud'],
+# Augmentation
+parser.add_argument('--augFlip', default='none', choices=['none', 'fliplr', 'flipup', 'fliplrud'],
                     help='The flip options {none, fliplr, flipud, fliplrud} as randompre-processing augmentation')
 parser.add_argument('--augNoise', type=float, default=0,
                     help='The stddev of Noise in AWGN as pre-processing augmentation')
@@ -162,13 +162,16 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO)
 
+
 def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
 
+
 args = parser.parse_args()
 
 args.cuda = torch.cuda.is_available()
+
 
 def main():
     if args.validation_interval == 0:
@@ -225,17 +228,17 @@ def main():
     if args.train_db:
         train_loader = torch.utils.data.DataLoader(
             datasets.MNIST('../data', train=True, download=True,
-                   transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                   ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+                           transform=transforms.Compose([
+                               transforms.ToTensor(),
+                               transforms.Normalize((0.1307,), (0.3081,))
+                           ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
         validation_loader = torch.utils.data.DataLoader(
             datasets.MNIST('../data', train=False, download=True,
-                   transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                   ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+                           transform=transforms.Compose([
+                               transforms.ToTensor(),
+                               transforms.Normalize((0.1307,), (0.3081,))
+                           ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
 
     model = Net()
     if args.cuda:
@@ -249,9 +252,8 @@ def main():
         current_epoch = epoch
         if args.validation_db and current_epoch >= next_validation:
             test(model, validation_loader)
-            next_validation = (round(float(current_epoch)/args.validation_interval) + 1) * \
-                            args.validation_interval
-
+            next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
+                              args.validation_interval
 
 
 def train(epoch, model, train_loader, optimizer):
@@ -265,7 +267,7 @@ def train(epoch, model, train_loader, optimizer):
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
-        
+
         output = model(data)
         loss = F.nll_loss(output, target)
         losses.update(loss.data[0], data.size(0))
@@ -279,19 +281,19 @@ def train(epoch, model, train_loader, optimizer):
         optimizer.step()
 
         if batch_idx % log_interval == 0:
-           rint('Train Epoch: {}\t'
-                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
-                  'Loss: {:.6f}'.format(
-                      epoch, batch_idx * len(data), len(loader.dataset),
-                      100. * batch_idx / len(loader), losses.val))
-            logging.info("Training (epoch " + str(epoch) + "):" + "loss =" + str(losses.val) ", lr = " + str(args.lr_base_rate) + ", accuracy = " + str(accuracy.avg))
+            rint('Train Epoch: {}\t'
+                 'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
+                 'Loss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(loader.dataset),
+                       100. * batch_idx / len(loader), losses.val))
+            logging.info("Training (epoch " + str(epoch) + "):" + "loss =" + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + str(accuracy.avg))
 
-def test(model, validation_loader):
+ def test(model, validation_loader):
     losses = average_meter()
     accuracy = average_meter()
 
     model.eval()
-    
+
     for data, target in validation_loader:
         if args.cuda:
             data, target = data.cuda(), target.cuda()
@@ -308,6 +310,5 @@ def test(model, validation_loader):
     print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
         losses.avg, int(accuracy.sum), len(loader.dataset), 100. * accuracy.avg))
 
-
 if __name__ == '__main__':
-    main()
+        main()
