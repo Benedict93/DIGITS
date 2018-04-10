@@ -180,7 +180,7 @@ args.cuda = torch.cuda.is_available()
 
 def main():
     current_epoch = 0
-    
+
     if args.validation_interval == 0:
         args.validation_db = None
     if args.seed:
@@ -268,12 +268,10 @@ def main():
 
     logging.info('Started training the model')
 
-    for epoch in range(current_epoch, args.epoch):
-        train(current_epoch, model, train_loader, optimizer)
-        step = step + 1
-        current_epoch = round((step * batch_size_train) / (train_loader.dataset), epoch_round)
-        if args.validation_db and current_epoch >= next_validation:
-            test(current_epoch, model, validation_loader)
+    for epoch in range(0, args.epoch):
+        train(epoch, model, train_loader, optimizer)
+        if args.validation_db and epoch >= next_validation:
+            test(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
 
@@ -285,6 +283,9 @@ def train(epoch, model, train_loader, optimizer):
     model.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
+        step = step + 1
+        current_epoch = round((step * batch_size_train) / (train_loader.dataset), epoch_round)
+
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
@@ -307,7 +308,7 @@ def train(epoch, model, train_loader, optimizer):
                  'Loss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), losses.val))
-            logging.info("Training (epoch " + str(epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+            logging.info("Training (epoch " + str(current_epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
 def test(epoch, model, validation_loader):
     losses = average_meter()
@@ -330,7 +331,7 @@ def test(epoch, model, validation_loader):
 
     print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
         losses.avg, int(accuracy.sum), len(validation_loader.dataset), 100. * accuracy.avg))
-    logging.info("Validation (epoch " + str(epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
+    logging.info("Validation (epoch " + str(epoch) + "): " + "loss = " + str(losses.avg) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
 
 class average_meter(object):
 
