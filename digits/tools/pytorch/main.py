@@ -258,7 +258,7 @@ def main():
     for epoch in range(1, args.epoch+1):
         if args.snapshotInterval:
             save = 1 
-        train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot_interval)
+        train(epoch, model, train_loader, optimizer, save, snapshot_prefix, args.snapshotInterval)
         if args.validation_db and epoch >= next_validation:
             test(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
@@ -290,7 +290,7 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot
 
         if save == 1:
             save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-            number_dec = str(FLAGS.snapshotInterval-int(FLAGS.snapshotInterval))[2:]
+            number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
             if number_dec is '':
                 number_dec = '0'
             epoch_fmt = "{:." + number_dec + "f}"
