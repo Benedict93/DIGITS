@@ -258,14 +258,14 @@ def main():
     for epoch in range(1, args.epoch+1):
         if args.snapshotInterval:
             save = 1 
-        train(epoch, model, train_loader, optimizer, save)
+        train(epoch, model, train_loader, optimizer, save, snapshot_prefix)
         if args.validation_db and epoch >= next_validation:
             test(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
 
 
-def train(epoch, model, train_loader, optimizer, save):
+def train(epoch, model, train_loader, optimizer, save, snapshot_prefix):
     losses = average_meter()
     accuracy = average_meter()
 
@@ -290,7 +290,7 @@ def train(epoch, model, train_loader, optimizer, save):
 
         if save == 1:
             save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-            snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pt')
+            snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
             logging.info('Snapshotting to %s', snapshot_file)
             torch.save (save_state, snapshot_file)
             
