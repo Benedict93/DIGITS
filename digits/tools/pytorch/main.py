@@ -198,7 +198,6 @@ def main():
     # This variable keeps track of next epoch, when to save model weights.
     next_snapshot_save = args.snapshotInterval
     logging.info("Training epochs to be completed before taking a snapshot : %s", next_snapshot_save)
-    last_snapshot_save_epoch = 0
 
     snapshot_prefix = args.snapshotPrefix if args.snapshotPrefix else args.network.split('.')[0]
     logging.info("Model weights will be saved as %s_<EPOCH>_Model.pt", snapshot_prefix)
@@ -256,14 +255,16 @@ def main():
     logging.info('Started training the model')
 
     for epoch in range(1, args.epoch+1):
-        train(epoch, model, train_loader, optimizer, args.epoch)
+        if args.snapshotInterval > 0 and current_epoch >= next_snapshot_save:
+            save = 1
+        train(epoch, model, train_loader, optimizer, save)
         if args.validation_db and epoch >= next_validation:
             test(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
 
 
-def train(epoch, model, train_loader, optimizer, total_epochs):
+def train(epoch, model, train_loader, optimizer, save):
     losses = average_meter()
     accuracy = average_meter()
 
@@ -286,14 +287,17 @@ def train(epoch, model, train_loader, optimizer, total_epochs):
         loss.backward()
         optimizer.step()
 
+        if save == 1:
+            save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+            torch.save (save_state, args.save)
+
         if batch_idx % log_interval == 0:
-            current_epoch = total_epochs / 10.0
             print('Train Epoch: {}\t'
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
                  'Loss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), losses.val))
-            logging.info("Training (epoch " + str(current_epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+            logging.info("Training (epoch " + str(epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
 def test(epoch, model, validation_loader):
     losses = average_meter()
@@ -334,6 +338,7 @@ class average_meter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
 
 if __name__ == '__main__':
         main()
