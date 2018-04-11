@@ -258,14 +258,14 @@ def main():
     for epoch in range(1, args.epoch+1):
         if args.snapshotInterval:
             save = 1 
-        train(epoch, model, train_loader, optimizer, save, snapshot_prefix)
+        train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot_interval)
         if args.validation_db and epoch >= next_validation:
             test(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
 
 
-def train(epoch, model, train_loader, optimizer, save, snapshot_prefix):
+def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot_interval):
     losses = average_meter()
     accuracy = average_meter()
 
@@ -290,6 +290,9 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix):
 
         if save == 1:
             save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+            number_dec = str(FLAGS.snapshotInterval-int(FLAGS.snapshotInterval))[2:]
+            if number_dec is '':
+                number_dec = '0'
             epoch_fmt = "{:." + number_dec + "f}"
             snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
             logging.info('Snapshotting to %s', snapshot_file)
