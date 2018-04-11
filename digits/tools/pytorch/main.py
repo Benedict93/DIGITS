@@ -30,47 +30,8 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 
-# define model parameters for the model in PyTorch?? Each to either have a initial value!
-"""
 #Basic Model Parameters
 
-batch_size: Number of images to process in a batch
-croplen: Crop (x and y). A zero value means no cropping will be applied
-epoch: Number of epochs to train, -1 for unbounded
-inference_db: Directory with inference file source
-validation_interval: Number of train epochs to complete, to perform one validation
-labels_list: Text file listing label definitions
-momentum: value of 0.9, Momentum # Not used by DIGITS front-end
-mean: Mean image file
-network: File containing network (model)
-networkDirectory: Directory in which network exists
-optimization: Optimization method
-save: Save directory
-seed: Fixed input seed for repeatable experiments
-shuffle: Shuffle records before training
-snapshotInterval: Specifies the training epochs to be completed before taking a snapshot
-SnapshotPrefix: Prefix of the weights/snapshots
-subtractMean: Select mean subtraction method. Possible values are 'image', 'pixel' or 'none'
-train_db: Directory with training file source
-train_labels: Directory with an optional and seperate labels file source for training
-validation_db: Directory with validation file source
-validation_labels: Directory with an optional and seperate labels file source for validation
-visualizeModelPath: Constructs the current model for visualization
-visualize_inf: Will output weights and activations for an inference job.
-weights: Filename for weights of a model to use for fine-tuning
-
-#Augmentation
-augFlip:The flip options {none, fliplr, flipud, fliplrud} as randompre-processing augmentation
-augNoise:The stddev of Noise in AWGN as pre-processing augmentation
-augContrast:The contrast factor's bounds as sampled from a random-uniform distribution
-     as pre-processing  augmentation
-augWhitenin:Performs per-image whitening by subtracting off its own mean and
-    dividing by its own standard deviation.
-augHSVhg:The stddev of HSV's Hue shift as pre-processing  augmentation
-augHSVs:The stddev of HSV's Saturation shift as pre-processing  augmentation
-augHSVv: The stddev of HSV's Value shift as pre-processing augmentation
-
-"""
 parser = argparse.ArgumentParser(description='Process model parameters in Pytorch')
 
 # Basic Model Parameters
@@ -138,7 +99,7 @@ parser.add_argument('--lr_power', type=float, default=float('Inf'),
 parser.add_argument('--lr_stepvalues', default='',
                     help='Required to calculate stepsize of the learning rate. Applies to: (step, multistep, sigmoid). For the multistep lr_policy you can input multiple values seperated by commas')
 
-# Augmentation
+# Augmentation: Other augmentations can be added in from torchvision.transforms package
 parser.add_argument('--augFlip', default='none', choices=['none', 'fliplr', 'flipup', 'fliplrud'],
                     help='The flip options {none, fliplr, flipud, fliplrud} as randompre-processing augmentation')
 parser.add_argument('--augNoise', type=float, default=0,
@@ -154,28 +115,105 @@ parser.add_argument('--augHSVs', type=float, default=0,
 parser.add_argument('--augHSVv', type=float, default=0,
                     help='The stddev of HSV Value shift as pre-processing augmentation')
 
-""" 
-Other augmentations to be added in from torchvision.transforms package
+args = parser.parse_args()
 
-"""
+args.cuda = torch.cuda.is_available()
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO)
 
-
 #CONSTANTS
 log_interval = 10
-
 
 
 def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
 
+def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot_interval):
+    losses = average_meter()
+    accuracy = average_meter()
 
-args = parser.parse_args()
+    model.train()
 
-args.cuda = torch.cuda.is_available()
+    for batch_idx, (data, target) in enumerate(train_loader):
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+        data, target = Variable(data), Variable(target)
+
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        losses.update(loss.data[0], data.size(0))
+
+        pred = output.data.max(1)[1]
+        prec = pred.eq(target.data).cpu().sum()
+        accuracy.update(float(prec) / data.size(0), data.size(0))
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if save == 1:
+            save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+            number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
+            if number_dec is '':
+                number_dec = '0'
+            epoch_fmt = "{:." + number_dec + "f}"
+            snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
+            logging.info('Snapshotting to %s', snapshot_file)
+            torch.save (save_state, snapshot_file)
+            
+
+        if batch_idx % log_interval == 0:
+            print('Train Epoch: {}\t'
+                 'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
+                 'Loss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(train_loader.dataset),
+                       100. * batch_idx / len(train_loader), losses.val))
+            logging.info("Training (epoch " + str(epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+
+def test(epoch, model, validation_loader):
+    losses = average_meter()
+    accuracy = average_meter()
+
+    model.eval()
+
+    for data, target in validation_loader:
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+        data, target = Variable(data, volatile=True), Variable(target, volatile=True)
+
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        losses.update(loss.data[0], data.size(0))
+
+        pred = output.data.max(1)[1]
+        prec = pred.eq(target.data).cpu().sum()
+        accuracy.update(float(prec) / data.size(0), data.size(0))
+
+    print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
+        losses.avg, int(accuracy.sum), len(validation_loader.dataset), 100. * accuracy.avg))
+    logging.info("Validation (epoch " + str(epoch) + "): " + "loss = " + str(losses.avg) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
+
+class average_meter(object):
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+
+
 
 
 def main():
@@ -265,87 +303,6 @@ def main():
                               args.validation_interval
 
 
-def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot_interval):
-    losses = average_meter()
-    accuracy = average_meter()
-
-    model.train()
-
-    for batch_idx, (data, target) in enumerate(train_loader):
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
-
-        output = model(data)
-        loss = F.nll_loss(output, target)
-        losses.update(loss.data[0], data.size(0))
-
-        pred = output.data.max(1)[1]
-        prec = pred.eq(target.data).cpu().sum()
-        accuracy.update(float(prec) / data.size(0), data.size(0))
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if save == 1:
-            save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-            number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
-            if number_dec is '':
-                number_dec = '0'
-            epoch_fmt = "{:." + number_dec + "f}"
-            snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
-            logging.info('Snapshotting to %s', snapshot_file)
-            torch.save (save_state, snapshot_file)
-            
-
-        if batch_idx % log_interval == 0:
-            print('Train Epoch: {}\t'
-                 'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
-                 'Loss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                       100. * batch_idx / len(train_loader), losses.val))
-            logging.info("Training (epoch " + str(epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
-
-def test(epoch, model, validation_loader):
-    losses = average_meter()
-    accuracy = average_meter()
-
-    model.eval()
-
-    for data, target in validation_loader:
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target, volatile=True)
-
-        output = model(data)
-        loss = F.nll_loss(output, target)
-        losses.update(loss.data[0], data.size(0))
-
-        pred = output.data.max(1)[1]
-        prec = pred.eq(target.data).cpu().sum()
-        accuracy.update(float(prec) / data.size(0), data.size(0))
-
-    print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
-        losses.avg, int(accuracy.sum), len(validation_loader.dataset), 100. * accuracy.avg))
-    logging.info("Validation (epoch " + str(epoch) + "): " + "loss = " + str(losses.avg) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
-
-class average_meter(object):
-
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
 
 
 if __name__ == '__main__':
