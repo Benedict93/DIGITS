@@ -17,7 +17,7 @@ class Net(nn.Module):
     F7 - 10 (Output)
     """
     def __init__(self):
-        super(LeNet5, self).__init__()
+        super(Net, self).__init__()
 
         self.convnet = nn.Sequential(OrderedDict([
             ('c1', nn.Conv2d(1, 6, kernel_size=(5, 5))),
