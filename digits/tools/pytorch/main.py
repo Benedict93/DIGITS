@@ -253,7 +253,8 @@ def main():
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
 
     logging.info('Started training the model')
-
+    save = 0
+    
     for epoch in range(1, args.epoch+1):
         if args.snapshotInterval > 0 and current_epoch >= next_snapshot_save:
             save = 1
