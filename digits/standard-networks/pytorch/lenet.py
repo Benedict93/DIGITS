@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class LeNet5(nn.Module):
+class Net(nn.Module):
     """
     Input - 1x32x32
     C1 - 6@28x28 (5x5 kernel)
