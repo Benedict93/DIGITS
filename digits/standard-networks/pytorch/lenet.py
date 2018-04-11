@@ -23,7 +23,7 @@ class Net(nn.Module):
         # Max pooling over a (2, 2) window
         x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
         # If the size is a square you can only specify a single number
-        x = F.max_pool2d(F.relu(self.conv2_drop(self.conv2(x)), 2))
+        x = F.max_pool2d(F.relu(self.conv2_drop(self.conv2(x))), 2)
         x = x.view(-1, self.num_flat_features(x))
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
