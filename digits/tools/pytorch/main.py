@@ -290,6 +290,7 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix):
 
         if save == 1:
             save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+            epoch_fmt = "{:." + number_dec + "f}"
             snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
             logging.info('Snapshotting to %s', snapshot_file)
             torch.save (save_state, snapshot_file)
