@@ -1,36 +1,44 @@
 import torch
 from torch.autograd import Variable
+from collections import OrderedDict
 import torch.nn as nn
 import torch.nn.functional as F
 
 
-class Net(nn.Module):
-
+class LeNet5(nn.Module):
+    """
+    Input - 1x32x32
+    C1 - 6@28x28 (5x5 kernel)
+    S2 - 6@14x14 (2x2 kernel, stride 2) Subsampling
+    C3 - 16@10x10 (5x5 kernel)
+    S4 - 16@5x5 (2x2 kernel, stride 2) Subsampling
+    C5 - 120@1x1 (5x5 kernel)
+    F6 - 84
+    F7 - 10 (Output)
+    """
     def __init__(self):
-        super(Net, self).__init__()
-        # 1 input image channel, 6 output channels, 5x5 square convolution
-        # kernel
-        self.conv1 = nn.Conv2d(1, 6, 5)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        # an affine operation: y = Wx + b
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        super(LeNet5, self).__init__()
 
-    def forward(self, x):
-        # Max pooling over a (2, 2) window
-        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-        # If the size is a square you can only specify a single number
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = x.view(-1, self.num_flat_features(x))
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+        self.convnet = nn.Sequential(OrderedDict([
+            ('c1', nn.Conv2d(1, 6, kernel_size=(5, 5))),
+            ('relu1', nn.ReLU()),
+            ('s2', nn.MaxPool2d(kernel_size=(2, 2), stride=2)),
+            ('c3', nn.Conv2d(6, 16, kernel_size=(5, 5))),
+            ('relu3', nn.ReLU()),
+            ('s4', nn.MaxPool2d(kernel_size=(2, 2), stride=2)),
+            ('c5', nn.Conv2d(16, 120, kernel_size=(5, 5))),
+            ('relu5', nn.ReLU())
+        ]))
 
-    def num_flat_features(self, x):
-        size = x.size()[1:]  # all dimensions except the batch dimension
-        num_features = 1
-        for s in size:
-            num_features *= s
-        return num_features
+        self.fc = nn.Sequential(OrderedDict([
+            ('f6', nn.Linear(120, 84)),
+            ('relu6', nn.ReLU()),
+            ('f7', nn.Linear(84, 10)),
+            ('sig7', nn.LogSoftmax())
+        ]))
+
+    def forward(self, img):
+        output = self.convnet(img)
+        output = output.view(-1, 120)
+        output = self.fc(output)
+        return output
