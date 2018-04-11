@@ -256,8 +256,8 @@ def main():
     save = 0
 
     for epoch in range(1, args.epoch+1):
-        if args.snapshotInterval > 0 and current_epoch >= next_snapshot_save:
-            save = 1
+        if args.snapshotInterval:
+            save = 1 
         train(epoch, model, train_loader, optimizer, save)
         if args.validation_db and epoch >= next_validation:
             test(epoch, model, validation_loader)
