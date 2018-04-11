@@ -290,9 +290,10 @@ def train(epoch, model, train_loader, optimizer, save):
 
         if save == 1:
             save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-            torch.save (save_state, args.save)
             snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pt')
             logging.info('Snapshotting to %s', snapshot_file)
+            torch.save (save_state, snapshot_file)
+            
 
         if batch_idx % log_interval == 0:
             print('Train Epoch: {}\t'
