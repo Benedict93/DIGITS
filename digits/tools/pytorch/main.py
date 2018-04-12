@@ -294,10 +294,7 @@ def main():
             validate(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
-    
-    #If required, perform final Validation pass
-    if args.validation_db and current_epoch >= next_validation:
-            validate(current_epoch, model, validation_loader)
+
 
 if __name__ == '__main__':
         main()
