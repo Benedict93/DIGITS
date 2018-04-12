@@ -135,7 +135,7 @@ def train(epoch, model, train_loader, optimizer):
     losses = average_meter()
     accuracy = average_meter()
     epoch = float(epoch)
-    
+
     model.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -158,7 +158,7 @@ def train(epoch, model, train_loader, optimizer):
         dec = 0
         percentage = 100. * batch_idx / len(train_loader)
         if percentage % 10 == 0:
-            dec += 0.1
+            dec =+ 0.1
             if dec == 1:
                 dec = 0
             print('Train Epoch: {}\t'
@@ -285,7 +285,7 @@ def main():
 
     logging.info('Started training the model')
 
-    for epoch in range(current_epoch, args.epoch+1):
+    for epoch in range(current_epoch, args.epoch):
         #Initial forward Validation pass
         validate(epoch, model, validation_loader)
 
@@ -297,8 +297,6 @@ def main():
             validate(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
-
-
 
 
 if __name__ == '__main__':
