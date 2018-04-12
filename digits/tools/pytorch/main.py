@@ -123,8 +123,6 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO)
 
-#CONSTANTS
-
 
 def loadLabels(filename):
     with open(filename) as f:
@@ -133,6 +131,7 @@ def loadLabels(filename):
 def train(epoch, model, train_loader, optimizer):
     losses = average_meter()
     accuracy = average_meter()
+    initial_epoch = epoch
     epoch = float(epoch)
     log_interval = len(train_loader) / 10
 
@@ -157,6 +156,8 @@ def train(epoch, model, train_loader, optimizer):
 
         if batch_idx % log_interval == 0:
             epoch = epoch + 0.1
+            if epoch.is_integer():
+                epoch = intial_epoch
             print('Train Epoch: {}\t'
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
                  'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 
@@ -166,6 +167,7 @@ def train(epoch, model, train_loader, optimizer):
 def validate(epoch, model, validation_loader):
     losses = average_meter()
     accuracy = average_meter()
+    epoch = float(epoch)
 
     model.eval()
 
@@ -280,10 +282,10 @@ def main():
 
     logging.info('Started training the model')
 
-    for epoch in range(current_epoch, args.epoch):
-        #Initial forward Validation pass
-        validate(epoch, model, validation_loader)
+    #Initial forward Validation pass
+    validate(0, model, validation_loader)
 
+    for epoch in range(current_epoch, args.epoch):
         #Training network
         train(epoch, model, train_loader, optimizer)
 
