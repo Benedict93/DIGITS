@@ -134,7 +134,8 @@ def loadLabels(filename):
 def train(epoch, model, train_loader, optimizer):
     losses = average_meter()
     accuracy = average_meter()
-
+    epoch = float(epoch)
+    
     model.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -153,14 +154,19 @@ def train(epoch, model, train_loader, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-            
-        if batch_idx % log_interval == 0:
+
+        dec = 0
+        percentage = 100. * batch_idx / len(train_loader)
+        if percentage % 10 == 0:
+            dec += 0.1
+            if dec == 1:
+                dec = 0
             print('Train Epoch: {}\t'
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
                  'Loss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), losses.val))
-            logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+            logging.info("Training (epoch " + str(epoch + dec) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
 def validate(epoch, model, validation_loader):
     losses = average_meter()
@@ -280,7 +286,13 @@ def main():
     logging.info('Started training the model')
 
     for epoch in range(current_epoch, args.epoch+1):
+        #Initial forward Validation pass
+        validate(epoch, model, validation_loader)
+
+        #Training network
         train(epoch, model, train_loader, optimizer)
+
+        #For every validation interval, perform validation
         if args.validation_db and epoch >= next_validation:
             validate(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
