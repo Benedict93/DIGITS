@@ -54,8 +54,7 @@ parser.add_argument('--network', default='',
 parser.add_argument('--networkDirectory', default='',
                     help='Directory in which network exists')
 parser.add_argument('--optimization', default='sgd',
-                    choices=['sgd', 'nag', 'adagrad', 'rmsprop', 'adadelta', 'adam', 'sparseadam', 'adamax', 'asgd',
-                             'lbfgs', 'rprop'],
+                    choices=['sgd', 'nag', 'adagrad', 'rmsprop', 'adadelta', 'adam', 'sparseadam', 'adamax', 'asgd', 'rprop'],
                     help='Optimization method')
 parser.add_argument('--save', default='results',
                     help='Save directory')
@@ -307,8 +306,6 @@ def main():
         optimizer = optim.Adamax(model.parameters(), lr=args.lr_base_rate)
     elif args.optimization =='asgd':
         optimizer = optim.ASGD(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='lbfgs':
-        optimizer = optim.LBFGS(model.parameters(), lr=args.lr_base_rate)
     elif args.optimization =='rprop':
         optimizer = optim.Rprop(model.parameters(), lr=args.lr_base_rate)
 

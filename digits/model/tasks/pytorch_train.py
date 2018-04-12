@@ -223,8 +223,6 @@ class PyTorchTrainTask(TrainTask):
             args.append('--optimization=adamax')
         elif self.solver_type == 'ASGD':
             args.append('--optimization=asgd')
-        elif self.solver_type == 'LBFGS':
-        	args.append('--optimization=lbfgs')
         elif self.solver_type == 'RPROP':
         	args.append('--optimization=rprop')
         
