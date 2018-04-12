@@ -35,7 +35,7 @@ from torchvision import datasets, transforms
 parser = argparse.ArgumentParser(description='Process model parameters in Pytorch')
 
 # Basic Model Parameters
-parser.add_argument('--batch_size', type=int, default=16,
+parser.add_argument('--batch_size', type=int, default=10,
                     help='input batch size for training (default: 16)')
 parser.add_argument('--croplen', type=int, default=0,
                     help='Crop (x and y). A zero value means no cropping will be applied (default: 0)')
@@ -124,7 +124,6 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     level=logging.INFO)
 
 #CONSTANTS
-log_interval = 10
 
 
 def loadLabels(filename):
@@ -135,7 +134,7 @@ def train(epoch, model, train_loader, optimizer):
     losses = average_meter()
     accuracy = average_meter()
     epoch = float(epoch)
-    
+    log_interval = len(train_loader) / 10
 
     model.train()
 
@@ -156,18 +155,13 @@ def train(epoch, model, train_loader, optimizer):
         loss.backward()
         optimizer.step()
 
-        dec = 0.0
-        percentage = float("{:2.0f}".format(100. * batch_idx / len(train_loader)))
-        if percentage % 10 == 0:
-            dec += 0.1
-            print('{:2.0f}'.format(dec))
-            if dec == 1.0:
-                dec = 0
+        if batch_idx % log_interval == 0:
+            epoch = epoch + 0.1
             print('Train Epoch: {}\t'
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
                  'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 
                     100. * batch_idx / len(train_loader), losses.val))
-            logging.info("Training (epoch " + str(epoch + dec) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+            logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
 def validate(epoch, model, validation_loader):
     losses = average_meter()
