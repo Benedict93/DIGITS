@@ -156,7 +156,8 @@ def train(epoch, model, train_loader, optimizer):
         loss.backward()
         optimizer.step()
 
-        percentage = float("{:3.0f}".format(100. * batch_idx / len(train_loader)))
+        percentage = float("{:2.0f}".format(100. * batch_idx / len(train_loader)))
+        print('{:2.0f}'.format(percentage))
         if percentage % 10.0 == 0:
             dec = dec + 0.1
             if dec == 1.0:
