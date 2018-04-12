@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -
 # Copyright (c) 2014-2017, NVIDIA CORPORATION.  All rights reserved.
+
 
 import os
 
@@ -176,7 +178,7 @@ class ModelForm(Form):
             ('SPARSEADAM', 'Adam (For sparse tensors)'),
             ('ADAMAX', 'AdaMax (Variant of Adam based on infinity norm)'),
             ('ASGD', 'ASGD (Average Stochastic Gradient Descent)'),
-            ('LBFGS', 'L-BFGS ( Limited-memory Broyden–Fletcher–Goldfarb–Shanno)'),
+            ('LBFGS', 'L-BFGS (Limited-memory Broyden–Fletcher–Goldfarb–Shanno)'),
             ('RPROP', 'Rprop (Resilient backpropagation)'),
         ],
         default='SGD',
