@@ -157,15 +157,15 @@ def train(epoch, model, train_loader, optimizer):
         optimizer.step()
 
         percentage = float("{:2.0f}".format(100. * batch_idx / len(train_loader)))
-        print('{:2.0f}'.format(percentage))
         if percentage % 10 == 0:
             dec += 0.1
+            print('{:2.0f}'.format(dec))
             if dec == 1.0:
                 dec = 0
             print('Train Epoch: {}\t'
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
-                 'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset),
-                       100. * batch_idx / len(train_loader), losses.val))
+                 'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 
+                    100. * batch_idx / len(train_loader), losses.val))
             logging.info("Training (epoch " + str(epoch + dec) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
 def validate(epoch, model, validation_loader):
