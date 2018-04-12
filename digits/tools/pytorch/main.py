@@ -257,18 +257,6 @@ def main():
         logging.error("The user model class 'Net' is not a class.")
         exit(-1)
 
-     # under torchvision.transforms package
-    """ 
-    Cropping - torchvision.transforms.RandomCrop(size,padding=0)
-    Flipping - torchvision.transforms.RandomHorizontalFlip(p=0.5)
-             - torchvision.transforms.RandomVerticalFlip(p=0.5)
-    Quad Rotation - torchvision.transforms.RandomRotation(degrees = 90,180,270, resample=False, expand=False, center=None)
-    Arbitrary Rotation - torchvision.transforms.RandomRotation(degrees=(min,max), resample=False, expand=False, center=None)
-    Scaling - torchvision.transforms.Resize(size, interpolation=2)
-    HSV Shifting - torchvision.transforms.ColorJitter(brightness=0, contrast=0, saturation=0, hue=0)
-    Whitening - torchvision.tranforms.Normalize(mean,std)
-    """
-
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
         train_loader = torch.utils.data.DataLoader(
@@ -290,25 +278,6 @@ def main():
 
     if args.optimization == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
-    elif args.optimization =='nag':
-        optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate,momentum=args.momentum, nesterov=True)
-    elif args.optimization =='adagrad':
-        optimizer = optim.Adagrad(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='rmsprop':
-        optimizer = optim.RMSprop(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='adadelta':
-        optimizer = optim.adadelta(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='adam':
-        optimizer = optim.Adam(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='sparseadam':
-        optimizer = optim.SparseAdam(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='adamax':
-        optimizer = optim.Adamax(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='asgd':
-        optimizer = optim.ASGD(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='rprop':
-        optimizer = optim.Rprop(model.parameters(), lr=args.lr_base_rate)
-
     
     logging.info('Started training the model')
 
