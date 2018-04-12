@@ -294,6 +294,8 @@ def main():
             validate(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
+    #Final validation pass
+    validate(args.epoch, model, validation_loader)
 
 
 if __name__ == '__main__':
