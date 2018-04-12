@@ -135,7 +135,7 @@ def train(epoch, model, train_loader, optimizer):
     losses = average_meter()
     accuracy = average_meter()
     epoch = float(epoch)
-    dec = 0.0
+    
 
     model.train()
 
@@ -156,6 +156,7 @@ def train(epoch, model, train_loader, optimizer):
         loss.backward()
         optimizer.step()
 
+        dec = 0.0
         percentage = float("{:2.0f}".format(100. * batch_idx / len(train_loader)))
         if percentage % 10 == 0:
             dec += 0.1
