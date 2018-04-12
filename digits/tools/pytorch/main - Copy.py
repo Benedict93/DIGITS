@@ -30,6 +30,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 
+
 #Basic Model Parameters
 
 parser = argparse.ArgumentParser(description='Process model parameters in Pytorch')
@@ -99,7 +100,7 @@ parser.add_argument('--lr_power', type=float, default=float('Inf'),
 parser.add_argument('--lr_stepvalues', default='',
                     help='Required to calculate stepsize of the learning rate. Applies to: (step, multistep, sigmoid). For the multistep lr_policy you can input multiple values seperated by commas')
 
-# Augmentation: Other augmentations can be added in from torchvision.transforms package
+# Augmentation
 parser.add_argument('--augFlip', default='none', choices=['none', 'fliplr', 'flipup', 'fliplrud'],
                     help='The flip options {none, fliplr, flipud, fliplrud} as randompre-processing augmentation')
 parser.add_argument('--augNoise', type=float, default=0,
@@ -115,103 +116,28 @@ parser.add_argument('--augHSVs', type=float, default=0,
 parser.add_argument('--augHSVv', type=float, default=0,
                     help='The stddev of HSV Value shift as pre-processing augmentation')
 
-args = parser.parse_args()
+""" 
+Other augmentations to be added in from torchvision.transforms package
 
-args.cuda = torch.cuda.is_available()
-
+"""
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO)
 
+
 #CONSTANTS
 log_interval = 10
+
 
 
 def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
 
-def train(epoch, model, train_loader, optimizer):
-    losses = average_meter()
-    accuracy = average_meter()
 
-    model.train()
+args = parser.parse_args()
 
-    for batch_idx, (data, target) in enumerate(train_loader):
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
-
-        output = model(data)
-        loss = F.nll_loss(output, target)
-        losses.update(loss.data[0], data.size(0))
-
-        pred = output.data.max(1)[1]
-        prec = pred.eq(target.data).cpu().sum()
-        accuracy.update(float(prec) / data.size(0), data.size(0))
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if save == 1:
-            save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-            number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
-            if number_dec is '':
-                number_dec = '0'
-            epoch_fmt = "{:." + number_dec + "f}"
-            snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
-            logging.info('Snapshotting to %s', snapshot_file)
-            torch.save (save_state, snapshot_file)
-            
-
-        if batch_idx % log_interval == 0:
-            print('Train Epoch: {}\t'
-                 'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
-                 'Loss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                       100. * batch_idx / len(train_loader), losses.val))
-            logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
-
-def validate(epoch, model, validation_loader):
-    losses = average_meter()
-    accuracy = average_meter()
-
-    model.eval()
-
-    for data, target in validation_loader:
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target, volatile=True)
-
-        output = model(data)
-        loss = F.nll_loss(output, target)
-        losses.update(loss.data[0], data.size(0))
-
-        pred = output.data.max(1)[1]
-        prec = pred.eq(target.data).cpu().sum()
-        accuracy.update(float(prec) / data.size(0), data.size(0))
-
-    print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
-        losses.avg, int(accuracy.sum), len(validation_loader.dataset), 100. * accuracy.avg))
-    logging.info("Validation (epoch " + str(epoch) + "):" + " loss = " + str(losses.avg) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
-
-class average_meter(object):
-
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
+args.cuda = torch.cuda.is_available()
 
 
 def main():
@@ -236,7 +162,7 @@ def main():
     logging.info("Training epochs to be completed before taking a snapshot : %s", next_snapshot_save)
 
     snapshot_prefix = args.snapshotPrefix if args.snapshotPrefix else args.network.split('.')[0]
-    logging.info("Model weights will be saved as %s_<EPOCH>_Model.pth.tar", snapshot_prefix)
+    logging.info("Model weights will be saved as %s_<EPOCH>_Model.pt", snapshot_prefix)
 
     if not os.path.exists(args.save):
         os.makedirs(args.save)
@@ -289,15 +215,99 @@ def main():
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
 
     logging.info('Started training the model')
+    save = 0
 
-    for epoch in range(current_epoch, args.epoch+1):
-        train(epoch, model, train_loader, optimizer)
+    for epoch in range(1, args.epoch+1):
+        if args.snapshotInterval:
+            save = 1 
+        train(epoch, model, train_loader, optimizer, save, snapshot_prefix, args.snapshotInterval)
         if args.validation_db and epoch >= next_validation:
-            validate(epoch, model, validation_loader)
+            test(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
 
 
+def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot_interval):
+    losses = average_meter()
+    accuracy = average_meter()
+
+    model.train()
+
+    for batch_idx, (data, target) in enumerate(train_loader):
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+        data, target = Variable(data), Variable(target)
+
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        losses.update(loss.data[0], data.size(0))
+
+        pred = output.data.max(1)[1]
+        prec = pred.eq(target.data).cpu().sum()
+        accuracy.update(float(prec) / data.size(0), data.size(0))
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if save == 1:
+            save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+            number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
+            if number_dec is '':
+                number_dec = '0'
+            epoch_fmt = "{:." + number_dec + "f}"
+            snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
+            logging.info('Snapshotting to %s', snapshot_file)
+            torch.save (save_state, snapshot_file)
+            
+
+        if batch_idx % log_interval == 0:
+            print('Train Epoch: {}\t'
+                 'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
+                 'Loss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(train_loader.dataset),
+                       100. * batch_idx / len(train_loader), losses.val))
+            logging.info("Training (epoch " + str(epoch) + "): " + "loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+
+def test(epoch, model, validation_loader):
+    losses = average_meter()
+    accuracy = average_meter()
+
+    model.eval()
+
+    for data, target in validation_loader:
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+        data, target = Variable(data, volatile=True), Variable(target, volatile=True)
+
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        losses.update(loss.data[0], data.size(0))
+
+        pred = output.data.max(1)[1]
+        prec = pred.eq(target.data).cpu().sum()
+        accuracy.update(float(prec) / data.size(0), data.size(0))
+
+    print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
+        losses.avg, int(accuracy.sum), len(validation_loader.dataset), 100. * accuracy.avg))
+    logging.info("Validation (epoch " + str(epoch) + "): " + "loss = " + str(losses.avg) + ", lr = " + str(args.lr_base_rate) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
+
+class average_meter(object):
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
 
 
 if __name__ == '__main__':
