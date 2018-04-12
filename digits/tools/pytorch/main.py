@@ -163,8 +163,7 @@ def train(epoch, model, train_loader, optimizer):
                 dec = 0
             print('Train Epoch: {}\t'
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
-                 'Loss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.datasetsset),
+                 'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), losses.val))
             logging.info("Training (epoch " + str(epoch + dec) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
