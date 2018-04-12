@@ -135,7 +135,7 @@ def train(epoch, model, train_loader, optimizer):
     losses = average_meter()
     accuracy = average_meter()
     epoch = float(epoch)
-    dec = 0
+    dec = 0.0
 
     model.train()
 
