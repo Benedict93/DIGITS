@@ -27,6 +27,32 @@ IMG_EXTENSIONS = [
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO)
 
+
+def pil_loader(path):
+    # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
+    with open(path, 'rb') as f:
+        # with Image.open(f) as img:
+        #     return img.convert('RGB')
+        img = Image.open(f)
+        return img.convert('RGB')
+
+
+def accimage_loader(path):
+    import accimage
+    try:
+        return accimage.Image(path)
+    except IOError:
+        # Potentially a decoding problem, fall back to PIL.Image
+        return pil_loader(path)
+
+
+def default_loader(path):
+    from torchvision import get_image_backend
+    if get_image_backend() == 'accimage':
+        return accimage_loader(path)
+    else:
+        return pil_loader(path)
+
 def get_backend_of_source(db_path):
     """
     Takes a path as argument and infers the format of the data.
@@ -84,7 +110,8 @@ class LoaderFactory(object):
         return loader
 
 class LMDB_Loader(data.Dataset):
-    def __init__(self, lmdb_root, transform=None, target_transform=None):
+    def __init__(self, lmdb_root, transform=None, loader=default_loader, target_transform=None):
+        
         #TODO: set-up the given LMDB file (understand how LMDB works, what output does it do)
         self.transform = transform
         self.target_transform = target_transform
@@ -105,7 +132,6 @@ class LMDB_Loader(data.Dataset):
         
         label = datum.label
         image = caffe.io.datum_to_array(datum)
-        image = image.astype(np.uint8)
 
         # TODO: convert to tensor
         image = torchvision.transforms.ToTensor(image)

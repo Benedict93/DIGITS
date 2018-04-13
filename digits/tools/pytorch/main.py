@@ -245,8 +245,8 @@ def main():
         logging.info("Found %s classes", nclasses)
     
     if pt_data.get_backend_of_source(args.train_db) == 'lmdb':
-        train_set = pt_data.LoaderFactory.set_source(args.train_db)
-        val_set = pt_data.LoaderFactory.set_source(args.validation_db)
+        train_set = pt_data.LoaderFactory.set_source(args.train_db, transform = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.ToTensor(),]))
+        val_set = pt_data.LoaderFactory.set_source(args.validation_db, transform = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.ToTensor(),]))
     """
     flipflag = self.aug_dict['aug_flip']
             if flipflag == 'fliplr' or flipflag == 'fliplrud':
