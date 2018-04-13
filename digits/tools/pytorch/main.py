@@ -126,7 +126,7 @@ def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
 
-def train(epoch, model, train_loader, optimizer):
+def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot_interval):
     losses = average_meter()
     accuracy = average_meter()
     initial_epoch = epoch
@@ -162,7 +162,17 @@ def train(epoch, model, train_loader, optimizer):
                     100. * batch_idx / len(train_loader), losses.val))
             logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
-def validate(epoch, model, validation_loader, save, snapshot_prefix, snapshot_interval):
+        if save == 1:
+        save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+        number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
+        if number_dec is '':
+            number_dec = '0'
+        epoch_fmt = "{:." + number_dec + "f}"
+        snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
+        logging.info('Snapshotting to %s', snapshot_file)
+        torch.save (save_state, snapshot_file)
+
+def validate(epoch, model, validation_loader):
     losses = average_meter()
     accuracy = average_meter()
     epoch = float(epoch)
@@ -181,16 +191,6 @@ def validate(epoch, model, validation_loader, save, snapshot_prefix, snapshot_in
         pred = output.data.max(1)[1]
         prec = pred.eq(target.data).cpu().sum()
         accuracy.update(float(prec) / data.size(0), data.size(0))
-    
-    if save == 1:
-        save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-        number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
-        if number_dec is '':
-            number_dec = '0'
-        epoch_fmt = "{:." + number_dec + "f}"
-        snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
-        logging.info('Snapshotting to %s', snapshot_file)
-        torch.save (save_state, snapshot_file)
 
     print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
         losses.avg, int(accuracy.sum), len(validation_loader.dataset), 100. * accuracy.avg))
@@ -309,18 +309,17 @@ def main():
     logging.info('Started training the model')
     save = 0
     #Initial forward Validation pass
-    validate(0, model, validation_loader, save, snapshot_prefix, args.snapshotInterval)
+    validate(0, model, validation_loader)
 
     for epoch in range(current_epoch, args.epoch):
-        #Training network
-        train(epoch, model, train_loader, optimizer)
-
         if args.snapshotInterval:
             save = 1 
+        #Training network
+        train(epoch, model, train_loader, optimizer, save, snapshot_prefix, args.snapshotInterval)
 
         #For every validation interval, perform validation
         if args.validation_db and epoch >= next_validation:
-            validate(epoch, model, validation_loader, save, snapshot_prefix, args.snapshotInterval)
+            validate(epoch, model, validation_loader)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
     #Final validation pass
