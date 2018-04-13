@@ -243,10 +243,12 @@ def main():
             logging.error("Reading labels file %s failed.", args.labels_list)
             exit(-1)
         logging.info("Found %s classes", nclasses)
-    
+        
+    transform = transforms.Compose([transforms.RandomHorizontalFlip(),transforms.ToTensor(),])
+
     if pt_data.get_backend_of_source(args.train_db) == 'lmdb':
-        train_set = pt_data.LoaderFactory.set_source(args.train_db, transforms.Compose([transforms.RandomHorizontalFlip(),transforms.ToTensor(),]))
-        val_set = pt_data.LoaderFactory.set_source(args.validation_db, transforms.Compose([transforms.RandomHorizontalFlip(),transforms.ToTensor(),]))
+        train_set = pt_data.LoaderFactory.set_source(args.train_db, transform)
+        val_set = pt_data.LoaderFactory.set_source(args.validation_db, transform)
     """
     flipflag = self.aug_dict['aug_flip']
             if flipflag == 'fliplr' or flipflag == 'fliplrud':
