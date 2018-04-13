@@ -162,7 +162,7 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot
                     100. * batch_idx / len(train_loader), losses.val))
             logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
-        if epoch % snapshot_interval == 0 and save == 1:
+        if epoch.is_integer() and save == 1:
             save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
             number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
             if number_dec is '':
