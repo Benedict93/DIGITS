@@ -89,12 +89,12 @@ class LoaderFactory(object):
     def __init__(self):
         self.backend = None
         self.db_path = None
-        self.aug_dict = {}
+        self.transform = None
 
         pass
 
     @staticmethod
-    def set_source(db_path):
+    def set_source(db_path, transform):
         """
         Returns the correct backend.
         """
@@ -108,6 +108,7 @@ class LoaderFactory(object):
             logging.error("Backend (%s) not implemented" % (backend))
             exit(-1)
         return loader
+        loader.transform = transform
 
 class LMDB_Loader(data.Dataset):
     def __init__(self, lmdb_root, transform=None, loader=default_loader, target_transform=None):
@@ -116,6 +117,7 @@ class LMDB_Loader(data.Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.db_path= lmdb_root
+        self.loader = loader
 
         self.lmdb_env = lmdb.open(self.db_path, readonly=True)
         self.lmdb_txn = self.lmdb_env.begin(buffers=False)
