@@ -119,7 +119,7 @@ class LMDB_Loader(data.Dataset):
         self.db_path= lmdb_root
         self.loader = loader
 
-        self.lmdb_env = lmdb.open(self.db_path, readonly=True)
+        self.lmdb_env = lmdb.open(self.db_path, readonly=True, lock=False)
         self.lmdb_txn = self.lmdb_env.begin(buffers=False)
 
         self.length = self.lmdb_env.stat()['entries']
