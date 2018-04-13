@@ -154,8 +154,8 @@ def train(epoch, model, train_loader, optimizer):
         optimizer.step()
 
         if batch_idx % log_interval == 0:
-            epoch = epoch + 0.1
-            if epoch.is_integer():
+            epoch += 0.1
+            if epoch.is_integer() or epoch == 0:
                 epoch = intial_epoch
             print('Train Epoch: {}\t'
                  'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
@@ -245,8 +245,8 @@ def main():
         logging.info("Found %s classes", nclasses)
     
     if pt_data.get_backend_of_source(args.train_db) == 'lmdb':
-        train_set = pt_data.LMDB_loader(args.train_db)
-        val_set = pt_data.LMDB_loader(args.validation_db)
+        train_set = pt_data.LoaderFactory.set_source(args.train_db)
+        val_set = pt_data.LoaderFactory.set_source(args.validation_db)
     """
     flipflag = self.aug_dict['aug_flip']
             if flipflag == 'fliplr' or flipflag == 'fliplrud':

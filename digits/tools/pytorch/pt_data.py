@@ -54,6 +54,34 @@ def get_backend_of_source(db_path):
     logging.error("Cannot infer backend from db_path (%s)." % (db_path))
     exit(-1)
 
+class LoaderFactory(object):
+    """
+    A factory for data loading. It sets up a subclass with data loading
+    done with the respective backend. Its output is a tensorflow queue op
+    that is used to load in data, with optionally some minor postprocessing ops.
+    """
+    def __init__(self):
+        self.backend = None
+        self.db_path = None
+        self.aug_dict = {}
+
+        pass
+
+    @staticmethod
+    def set_source(db_path):
+        """
+        Returns the correct backend.
+        """
+        backend = get_backend_of_source(db_path)
+        loader = None
+        if backend == 'lmdb':
+            loader = LMDB_Loader(db_path)
+        elif backend == 'hdf5':
+            loader = Hdf5Loader(db_path)
+        else:
+            logging.error("Backend (%s) not implemented" % (backend))
+            exit(-1)
+        return loader
 
 class LMDB_Loader(data.Dataset):
     def __init__(self, lmdb_root, transform=None, target_transform=None):
