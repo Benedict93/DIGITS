@@ -91,7 +91,7 @@ class LMDB_Loader(data.Dataset):
         self.db_path= lmdb_root
 
         self.lmdb_env = lmdb.open(self.db_path, readonly=True)
-        self.lmdb_txn = self.lmdb_env.begin()
+        self.lmdb_txn = self.lmdb_env.begin(buffers=False)
 
         self.length = self.lmdb_env.stat()['entries']
 
@@ -102,10 +102,10 @@ class LMDB_Loader(data.Dataset):
         key_index ='{:08}'.format(index)
         value = lmdb_cursor.get(key_index)
         datum.ParseFromString(value)
+        
+        label = datum.label
         image = caffe.io.datum_to_array(datum)
         image = image.astype(np.uint8)
-
-        label = datum.label
 
         # TODO: convert to tensor
         image = torchvision.transforms.ToTensor(image)
