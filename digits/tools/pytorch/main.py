@@ -152,6 +152,9 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot
         loss.backward()
         optimizer.step()
 
+        print('{}'.format(save))
+
+
         if batch_idx % log_interval == 0:
             epoch += 0.1
             if epoch.is_integer() or epoch == 0:
@@ -163,6 +166,7 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot
             logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
         if save == 1 and epoch.is_integer():
+            print('Saving snapshot')
             save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
             number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
             if number_dec is '':
@@ -308,13 +312,12 @@ def main():
 
     
     logging.info('Started training the model')
-    save = 0
+    if args.snapshotInterval:
+        save = 1
     #Initial forward Validation pass
     validate(0, model, validation_loader)
 
     for epoch in range(current_epoch, args.epoch):
-        if args.snapshotInterval:
-            save = 1 
         #Training network
         train(epoch, model, train_loader, optimizer, save, snapshot_prefix, args.snapshotInterval)
 
