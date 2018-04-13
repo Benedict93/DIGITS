@@ -309,7 +309,7 @@ def main():
     logging.info('Started training the model')
     save = 0
     #Initial forward Validation pass
-    validate(0, model, validation_loader, save, snapshot_prefix, snapshot_interval)
+    validate(0, model, validation_loader, save, snapshot_prefix, args.snapshotInterval)
 
     for epoch in range(current_epoch, args.epoch):
         #Training network
@@ -320,7 +320,7 @@ def main():
 
         #For every validation interval, perform validation
         if args.validation_db and epoch >= next_validation:
-            validate(epoch, model, validation_loader, save, snapshot_prefix, snapshot_interval)
+            validate(epoch, model, validation_loader, save, snapshot_prefix, args.snapshotInterval)
             next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
                               args.validation_interval
     #Final validation pass
