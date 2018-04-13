@@ -30,7 +30,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 
-#Basic Model Parameters
+import pt_data
 
 parser = argparse.ArgumentParser(description='Process model parameters in Pytorch')
 
@@ -243,7 +243,27 @@ def main():
             logging.error("Reading labels file %s failed.", args.labels_list)
             exit(-1)
         logging.info("Found %s classes", nclasses)
+    
+    if pt_data.get_backend_of_source(args.train_db) == 'lmdb':
+        train_set = pt_data.LMDB_loader(args.train_db)
+        val_set = pt_data.LMDB_loader(args.validation_db)
+    """
+    flipflag = self.aug_dict['aug_flip']
+            if flipflag == 'fliplr' or flipflag == 'fliplrud':
+                data_transform = transforms.Compose([torchvision.transforms.RandomHorizontalFlip(p=0.5)])
+            if flipflag == 'fliplr' or flipflag == 'fliplrud':
+                data_transform = torchvision.transforms.RandomVerticalFlip(p=0.5)
 
+            aug_whitening = self.aug_dict['aug_whitening']
+            if aug_whitening:
+                torchvision.tranforms.Normalize(mean,std)
+
+            aug_hsv = self.aug_dict['aug_HSV']
+            if aug_hsv['h'] > 0.:
+                si
+
+    transform = 
+    """
     # Import the network file
     path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
     exec(open(path_network).read(), globals())
@@ -257,33 +277,11 @@ def main():
         logging.error("The user model class 'Net' is not a class.")
         exit(-1)
 
-     # under torchvision.transforms package
-    """ 
-    Cropping - torchvision.transforms.RandomCrop(size,padding=0)
-    Flipping - torchvision.transforms.RandomHorizontalFlip(p=0.5)
-             - torchvision.transforms.RandomVerticalFlip(p=0.5)
-    Quad Rotation - torchvision.transforms.RandomRotation(degrees = 90,180,270, resample=False, expand=False, center=None)
-    Arbitrary Rotation - torchvision.transforms.RandomRotation(degrees=(min,max), resample=False, expand=False, center=None)
-    Scaling - torchvision.transforms.Resize(size, interpolation=2)
-    HSV Shifting - torchvision.transforms.ColorJitter(brightness=0, contrast=0, saturation=0, hue=0)
-    Whitening - torchvision.tranforms.Normalize(mean,std)
-    """
-
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
-        train_loader = torch.utils.data.DataLoader(
-            datasets.MNIST('../data', train=True, download=True,
-                           transform=transforms.Compose([
-                               transforms.ToTensor(),
-                               transforms.Normalize((0.1307,), (0.3081,))
-                           ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+        train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
-        validation_loader = torch.utils.data.DataLoader(
-            datasets.MNIST('../data', train=False, download=True,
-                           transform=transforms.Compose([
-                               transforms.ToTensor(),
-                               transforms.Normalize((0.1307,), (0.3081,))
-                           ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+        validation_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     model = Net()
     if args.cuda:
         model.cuda()
