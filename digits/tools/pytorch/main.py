@@ -275,7 +275,7 @@ def main():
     if args.train_db:
         train_loader = torch.utils.data.DataLoader(
             datasets.MNIST('../data', train=True, download=True,
-                           transform=transfrom), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+                           transform=transform), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
         validation_loader = torch.utils.data.DataLoader(
             datasets.MNIST('../data', train=False, download=True,
