@@ -152,7 +152,7 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot
         loss.backward()
         optimizer.step()
 
-        if save == 1 and epoch.is_integer():
+        if save == 1 and epoch.is_integer() and epoch != 0:
             print('Saving snapshot')
             save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
             number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
