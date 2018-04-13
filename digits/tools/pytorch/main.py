@@ -302,21 +302,17 @@ def main():
 
     
     logging.info('Started training the model')
-    
-    #Initial forward Validation pass
-    validate(0, model, validation_loader)
 
     for epoch in range(current_epoch, args.epoch):
         #Training network
         train(epoch, model, train_loader, optimizer)
 
         #For every validation interval, perform validation
-        if args.validation_db and epoch >= next_validation:
+        if args.validation_db and epoch % args.validation_interval == 0:
             validate(epoch, model, validation_loader)
-            next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
-                              args.validation_interval
-    #Final validation pass
-    validate(args.epoch, model, validation_loader)
+        
+        #Final validation pass
+        validate(args.epoch, model, validation_loader)
 
 
 if __name__ == '__main__':
