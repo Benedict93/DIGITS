@@ -103,11 +103,10 @@ class LMDB_Loader(data.Dataset):
         value = lmdb_cursor.get(key_index)
         datum.ParseFromString(value)
         
-        image = caffe.io.datum_to_array(datum)
         label = datum.label
 
         # TODO: convert to tensor
-        image = torchvision.transforms.ToTensor(image)
+        image = torchvision.transforms.ToTensor(datum)
         label = torchvision.transforms.ToTensor(label)
 
         #TODO: do transforms for image
