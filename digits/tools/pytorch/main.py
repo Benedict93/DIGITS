@@ -152,19 +152,6 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot
         loss.backward()
         optimizer.step()
 
-        print('{}'.format(save))
-
-
-        if batch_idx % log_interval == 0:
-            epoch += 0.1
-            if epoch.is_integer() or epoch == 0:
-                epoch = intial_epoch
-            print('Train Epoch: {}\t'
-                 'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
-                 'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 
-                    100. * batch_idx / len(train_loader), losses.val))
-            logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
-
         if save == 1 and epoch.is_integer():
             print('Saving snapshot')
             save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
@@ -176,6 +163,18 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot
             logging.info('Snapshotting to %s', snapshot_file)
             torch.save (save_state, snapshot_file)
             logging.info('Snapshot saved.')
+
+        if batch_idx % log_interval == 0:
+            epoch += 0.1
+            if epoch.is_integer() or epoch == 0:
+                epoch = intial_epoch
+            print('Train Epoch: {}\t'
+                 'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
+                 'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 
+                    100. * batch_idx / len(train_loader), losses.val))
+            logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+
+
 
 def validate(epoch, model, validation_loader):
     losses = average_meter()
