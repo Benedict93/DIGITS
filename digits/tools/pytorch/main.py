@@ -126,7 +126,7 @@ def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
 
-def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot_interval):
+def train(epoch, model, train_loader, optimizer):
     losses = average_meter()
     accuracy = average_meter()
     initial_epoch = epoch
@@ -154,17 +154,6 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot
 
         if batch_idx % log_interval == 0:
             epoch += 0.1
-            if save == 1 and epoch.is_integer() and epoch != 0:
-                print('Saving snapshot')
-                save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
-                number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
-                if number_dec is '':
-                    number_dec = '0'
-                epoch_fmt = "{:." + number_dec + "f}"
-                snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
-                logging.info('Snapshotting to %s', snapshot_file)
-                torch.save (save_state, snapshot_file)
-                logging.info('Snapshot saved.')
             if epoch.is_integer() or epoch == 0:
                 epoch = intial_epoch
             
@@ -313,14 +302,13 @@ def main():
 
     
     logging.info('Started training the model')
-    if args.snapshotInterval:
-        save = 1
+    
     #Initial forward Validation pass
     validate(0, model, validation_loader)
 
     for epoch in range(current_epoch, args.epoch):
         #Training network
-        train(epoch, model, train_loader, optimizer, save, snapshot_prefix, args.snapshotInterval)
+        train(epoch, model, train_loader, optimizer)
 
         #For every validation interval, perform validation
         if args.validation_db and epoch >= next_validation:

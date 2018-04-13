@@ -31,104 +31,64 @@ from torch.autograd import Variable
 from torchvision import datasets, transforms
 
 
-#define model parameters for the model in PyTorch?? Each to either have a initial value!
-"""
-#Basic Model Parameters
-
-batch_size: Number of images to process in a batch
-croplen: Crop (x and y). A zero value means no cropping will be applied
-epoch: Number of epochs to train, -1 for unbounded
-inference_db: Directory with inference file source
-validation_interval: Number of train epochs to complete, to perform one validation
-labels_list: Text file listing label definitions
-momentum: value of 0.9, Momentum # Not used by DIGITS front-end
-mean: Mean image file
-network: File containing network (model)
-networkDirectory: Directory in which network exists
-optimization: Optimization method
-save: Save directory
-seed: Fixed input seed for repeatable experiments
-shuffle: Shuffle records before training
-snapshotInterval: Specifies the training epochs to be completed before taking a snapshot
-SnapshotPrefix: Prefix of the weights/snapshots
-subtractMean: Select mean subtraction method. Possible values are 'image', 'pixel' or 'none'
-train_db: Directory with training file source
-train_labels: Directory with an optional and seperate labels file source for training
-validation_db: Directory with validation file source
-validation_labels: Directory with an optional and seperate labels file source for validation
-visualizeModelPath: Constructs the current model for visualization
-visualize_inf: Will output weights and activations for an inference job.
-weights: Filename for weights of a model to use for fine-tuning
-
-#Augmentation
-augFlip:The flip options {none, fliplr, flipud, fliplrud} as randompre-processing augmentation
-augNoise:The stddev of Noise in AWGN as pre-processing augmentation
-augContrast:The contrast factor's bounds as sampled from a random-uniform distribution
-     as pre-processing  augmentation
-augWhitenin:Performs per-image whitening by subtracting off its own mean and
-    dividing by its own standard deviation.
-augHSVhg:The stddev of HSV's Hue shift as pre-processing  augmentation
-augHSVs:The stddev of HSV's Saturation shift as pre-processing  augmentation
-augHSVv: The stddev of HSV's Value shift as pre-processing augmentation
-
-"""
 parser = argparse.ArgumentParser(description='Process model parameters in Pytorch')
 
 # Basic Model Parameters
-parser.add_argument('--batch_size', type=int, default=16,
+parser.add_argument('--batch_size', type=int, default=10,
                     help='input batch size for training (default: 16)')
-parser.add_argument('--croplen', type=int, default=0, 
+parser.add_argument('--croplen', type=int, default=0,
                     help='Crop (x and y). A zero value means no cropping will be applied (default: 0)')
-parser.add_argument('--epoch', type=int, default=10, 
+parser.add_argument('--epoch', type=int, default=10,
                     help='Number of epochs to train, -1 for unbounded')
-parser.add_argument('--inference_db', default='', 
+parser.add_argument('--inference_db', default='',
                     help='Directory with inference file source')
-parser.add_argument('--validation_interval', type=int, default=1, 
+parser.add_argument('--validation_interval', type=int, default=1,
                     help='Number of train epochs to complete, to perform one validation (default: 1)')
-parser.add_argument('--labels_list', default='', 
+parser.add_argument('--labels_list', default='',
                     help='Text file listing label definitions')
-parser.add_argument('--momentum', type=float, default=0.9, 
-                    help='SGD momentum (default: 0.9)') # Not used by DIGITS front-end
-parser.add_argument('--network', default='', 
+parser.add_argument('--momentum', type=float, default=0.9,
+                    help='SGD momentum (default: 0.9)')  # Not used by DIGITS front-end
+parser.add_argument('--network', default='',
                     help='File containing network (model)')
-parser.add_argument('--networkDirectory', default='', 
+parser.add_argument('--networkDirectory', default='',
                     help='Directory in which network exists')
-parser.add_argument('--optimization', default='sgd', choices=['sgd','nag','adagrad','rmsprop','adadelta','adam','sparseadam','adamax','asgd','lbfgs','rprop'],
+parser.add_argument('--optimization', default='sgd',
+                    choices=['sgd', 'nag', 'adagrad', 'rmsprop', 'adadelta', 'adam', 'sparseadam', 'adamax', 'asgd', 'rprop'],
                     help='Optimization method')
-parser.add_argument('--save', default='results', 
+parser.add_argument('--save', default='results',
                     help='Save directory')
-parser.add_argument('--seed', type=int, default=0, 
+parser.add_argument('--seed', type=int, default=0,
                     help='Fixed input seed for repeatable experiments (default:0)')
-parser.add_argument('--shuffle', action='store_true', default=False, 
+parser.add_argument('--shuffle', action='store_true', default=False,
                     help='Shuffle records before training')
-parser.add_argument('--snapshotInterval', type=float, default=1.0, 
+parser.add_argument('--snapshotInterval', type=float, default=1.0,
                     help='Specifies the training epochs to be completed before taking a snapshot')
 parser.add_argument('--snapshotPrefix', default='',
                     help='Prefix of the weights/snapshots')
-parser.add_argument('--subtractMean', default='none', choices=['image','pixel','none'],
+parser.add_argument('--subtractMean', default='none', choices=['image', 'pixel', 'none'],
                     help="Select mean subtraction method. Possible values are 'image', 'pixel' or 'none'")
 parser.add_argument('--train_db', default='',
                     help='Directory with training file source')
-parser.add_argument('--train_labels',  default='',
+parser.add_argument('--train_labels', default='',
                     help='Directory with an optional and seperate labels file source for training')
-parser.add_argument('--validation_db', default='', 
+parser.add_argument('--validation_db', default='',
                     help='Directory with validation file source')
 parser.add_argument('--validation_labels', default='',
                     help='Directory with an optional and seperate labels file source for validation')
 parser.add_argument('--visualizeModelPath', default='',
                     help='Constructs the current model for visualization')
-parser.add_argument('--visualize_inf', action='store_true', default=False, 
+parser.add_argument('--visualize_inf', action='store_true', default=False,
                     help='Will output weights and activations for an inference job.')
 parser.add_argument('--weights', default='',
                     help='Filename for weights of a model to use for fine-tuning')
-
 
 parser.add_argument('--bitdepth', type=int, default=8,
                     help='Specifies an image bitdepth')
 
 parser.add_argument('--lr_base_rate', type=float, default=0.01,
                     help='Learning Rate')
-parser.add_argument('--lr_policy', default='fixed', choices=['fixed','step','exp','inv','multistep','poly','sigmoid'], 
+parser.add_argument('--lr_policy', default='fixed',
+                    choices=['fixed', 'step', 'exp', 'inv', 'multistep', 'poly', 'sigmoid'],
                     help='Learning rate policy. (fixed, step, exp, inv, multistep, poly, sigmoid)')
 parser.add_argument('--lr_gamma', type=float, default=-1,
                     help='Required to calculate learning rate. Applies to: (step, exp, inv, multistep, sigmoid)')
@@ -137,15 +97,14 @@ parser.add_argument('--lr_power', type=float, default=float('Inf'),
 parser.add_argument('--lr_stepvalues', default='',
                     help='Required to calculate stepsize of the learning rate. Applies to: (step, multistep, sigmoid). For the multistep lr_policy you can input multiple values seperated by commas')
 
-
-#Augmentation
-parser.add_argument('--augFlip', default='none', choices =['none', 'fliplr', 'flipup', 'fliplrud'],
+# Augmentation: Other augmentations can be added in from torchvision.transforms package
+parser.add_argument('--augFlip', default='none', choices=['none', 'fliplr', 'flipup', 'fliplrud'],
                     help='The flip options {none, fliplr, flipud, fliplrud} as randompre-processing augmentation')
 parser.add_argument('--augNoise', type=float, default=0,
                     help='The stddev of Noise in AWGN as pre-processing augmentation')
 parser.add_argument('--augContrast', type=float, default=0,
                     help='The contrast factors bounds as sampled from a random-uniform distribution as pre-processing  augmentation')
-parser.add_argument('--augWhitening', action='store_true', default=False, 
+parser.add_argument('--augWhitening', action='store_true', default=False,
                     help='Performs per-image whitening by subtracting off its own mean and dividing by its own standard deviation')
 parser.add_argument('--augHSVhg', type=float, default=0,
                     help='The stddev of HSV Hue shift as pre-processing  augmentation')
@@ -154,33 +113,123 @@ parser.add_argument('--augHSVs', type=float, default=0,
 parser.add_argument('--augHSVv', type=float, default=0,
                     help='The stddev of HSV Value shift as pre-processing augmentation')
 
-""" 
-Other augmentations to be added in from torchvision.transforms package
+args = parser.parse_args()
 
-"""
+args.cuda = torch.cuda.is_available()
+
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
-                    level=logging.INFO) 
+                    level=logging.INFO)
 
-best_prec1 = 0
 
 def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
 
-args = parser.parse_args()
+def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot_interval):
+    losses = average_meter()
+    accuracy = average_meter()
+    initial_epoch = epoch
+    epoch = float(epoch)
+    log_interval = len(train_loader) / 10
 
-args.cuda = torch.cuda.is_available()
+    model.train()
+
+    for batch_idx, (data, target) in enumerate(train_loader):
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+        data, target = Variable(data), Variable(target)
+
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        losses.update(loss.data[0], data.size(0))
+
+        pred = output.data.max(1)[1]
+        prec = pred.eq(target.data).cpu().sum()
+        accuracy.update(float(prec) / data.size(0), data.size(0))
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if batch_idx % log_interval == 0:
+            epoch += 0.1
+            if save == 1 and epoch.is_integer() and epoch != 0:
+                print('Saving snapshot')
+                save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+                number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
+                if number_dec is '':
+                    number_dec = '0'
+                epoch_fmt = "{:." + number_dec + "f}"
+                snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
+                logging.info('Snapshotting to %s', snapshot_file)
+                torch.save (save_state, snapshot_file)
+                logging.info('Snapshot saved.')
+            if epoch.is_integer() or epoch == 0:
+                epoch = intial_epoch
+            
+            print('Train Epoch: {}\t'
+                 'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
+                 'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 
+                    100. * batch_idx / len(train_loader), losses.val))
+            logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+
+    
+
+
+
+def validate(epoch, model, validation_loader):
+    losses = average_meter()
+    accuracy = average_meter()
+    epoch = float(epoch)
+
+    model.eval()
+
+    for data, target in validation_loader:
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+        data, target = Variable(data, volatile=True), Variable(target, volatile=True)
+
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        losses.update(loss.data[0], data.size(0))
+
+        pred = output.data.max(1)[1]
+        prec = pred.eq(target.data).cpu().sum()
+        accuracy.update(float(prec) / data.size(0), data.size(0))
+
+    print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
+        losses.avg, int(accuracy.sum), len(validation_loader.dataset), 100. * accuracy.avg))
+    logging.info("Validation (epoch " + str(epoch) + "):" + " loss = " + str(losses.avg) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
+
+class average_meter(object):
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
 
 def main():
-    global best_prec1
+    current_epoch = 0
+
     if args.validation_interval == 0:
         args.validation_db = None
     if args.seed:
         torch.manual_seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
-    batch_size_train = args.batch_size  
+    batch_size_train = args.batch_size
     batch_size_val = args.batch_size
     logging.info("Train batch size is %s and validation batch size is %s", batch_size_train, batch_size_val)
 
@@ -191,10 +240,9 @@ def main():
     # This variable keeps track of next epoch, when to save model weights.
     next_snapshot_save = args.snapshotInterval
     logging.info("Training epochs to be completed before taking a snapshot : %s", next_snapshot_save)
-    last_snapshot_save_epoch = 0 
 
     snapshot_prefix = args.snapshotPrefix if args.snapshotPrefix else args.network.split('.')[0]
-    logging.info("Model weights will be saved as %s_<EPOCH>_Model.pt", snapshot_prefix)
+    logging.info("Model weights will be saved as %s_<EPOCH>_Model.pth.tar", snapshot_prefix)
 
     if not os.path.exists(args.save):
         os.makedirs(args.save)
@@ -211,181 +259,77 @@ def main():
             exit(-1)
         logging.info("Found %s classes", nclasses)
 
+    transform = transforms.Compose([
+                               transforms.ToTensor(),
+                               transforms.Normalize((0.1307,), (0.3081,))
+                           ])
+
     # Import the network file
     path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
     exec(open(path_network).read(), globals())
 
     try:
         Net
-    except NameError: 
+    except NameError:
         logging.error("The user model class 'Net' is not defined.")
         exit(-1)
     if not inspect.isclass(Net):  # noqa
         logging.error("The user model class 'Net' is not a class.")
         exit(-1)
 
-    kwargs = {'num_workers': 4, 'pin_memory': True} if args.cuda else {}
+    kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
         train_loader = torch.utils.data.DataLoader(
             datasets.MNIST('../data', train=True, download=True,
-                   transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                   ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+                           transform=transform), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
-        val_loader = torch.utils.data.DataLoader(
+        validation_loader = torch.utils.data.DataLoader(
             datasets.MNIST('../data', train=False, download=True,
-                   transform=transforms.Compose([
-                       transforms.ToTensor(),
-                       transforms.Normalize((0.1307,), (0.3081,))
-                   ])), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
-    
+                           transform=transform), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     model = Net()
     if args.cuda:
         model.cuda()
-    # define optimizer
+
     if args.optimization == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
+    elif args.optimization =='nag':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate,momentum=args.momentum, nesterov=True)
+    elif args.optimization =='adagrad':
+        optimizer = optim.Adagrad(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='rmsprop':
+        optimizer = optim.RMSprop(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='adadelta':
+        optimizer = optim.adadelta(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='adam':
+        optimizer = optim.Adam(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='sparseadam':
+        optimizer = optim.SparseAdam(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='adamax':
+        optimizer = optim.Adamax(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='asgd':
+        optimizer = optim.ASGD(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='rprop':
+        optimizer = optim.Rprop(model.parameters(), lr=args.lr_base_rate)
 
-    for epoch in range(1, args.epoch + 1):
-        adjust_learning_rate(optimizer, epoch)
-        train(epoch, model, train_loader, optimizer)
-        prec1 = validate(val_loader, model)
-        is_best = prec1 > best_prec1
-        best_prec1 = max(prec1, best_prec1)
-        save_checkpoint({
-            'epoch': epoch + 1,
-            'arch': args.arch,
-            'state_dict': model.state_dict(),
-            'best_prec1': best_prec1,
-            'optimizer' : optimizer.state_dict(),
-        }, is_best)
-        validate(epoch, model)
+    
+    logging.info('Started training the model')
+    if args.snapshotInterval:
+        save = 1
+    #Initial forward Validation pass
+    validate(0, model, validation_loader)
 
+    for epoch in range(current_epoch, args.epoch):
+        #Training network
+        train(epoch, model, train_loader, optimizer, save, snapshot_prefix, args.snapshotInterval)
 
-def train(epoch, model, train_loader, optimizer):
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
-    losses = AverageMeter()
-    top1 = AverageMeter()
-    top5 = AverageMeter()
+        #For every validation interval, perform validation
+        if args.validation_db and epoch >= next_validation:
+            validate(epoch, model, validation_loader)
+            next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
+                              args.validation_interval
+    #Final validation pass
+    validate(args.epoch, model, validation_loader)
 
-    #switch to train mode
-    model.train()
-    log_interval = 10
-
-    end = time.time()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        # measure data loading time
-        data_time.update(time.time() - end)
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
-        #compute output
-        output = model(data)
-        loss = F.nll_loss(output, target)
-
-        # measure accuracy and record loss
-        prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-        losses.update(loss.data[0], input.size(0))
-        top1.update(prec1[0], input.size(0))
-        top5.update(prec5[0], input.size(0))
-
-        #compute gradient and do SGD step
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-         # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
-
-        if batch_idx % log_interval == 0:
-            print('Epoch: [{0}][{1}/{2}]\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                   epoch, batch_idx, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses, top1=top1, top5=top5))
-            logging.info("Training (epoch "  + "): ")
-
-def validate(model, val_loader, ):
-    batch_time = AverageMeter()
-    losses = AverageMeter()
-    top1 = AverageMeter()
-    top5 = AverageMeter()
-    # switch to evaluate mode
-    model.eval()
-
-    end = time.time()
-
-    for batch_idx, (data, target) in enumerate(val_loader):
-        if args.cuda:
-            data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target, volatile=True)
-        
-        #compute output
-        output = model(data)
-        loss = F.nll_loss(output, target)
-
-        # measure accuracy and record loss
-        prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-        losses.update(loss.data[0], input.size(0))
-        top1.update(prec1[0], input.size(0))
-        top5.update(prec5[0], input.size(0))
-
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
-
-        if batch_idx % log_interval == 0:
-            print('Test: [{0}/{1}]\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                   i, len(val_loader), batch_time=batch_time, loss=losses,
-                   top1=top1, top5=top5))
-
-
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-
-def accuracy(output, target, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
-    maxk = max(topk)
-    batch_size = target.size(0)
-
-    _, pred = output.topk(maxk, 1, True, True)
-    pred = pred.t()
-    correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-    res = []
-    for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
-        res.append(correct_k.mul_(100.0 / batch_size))
-    return res
-def adjust_learning_rate(optimizer, epoch):
-    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = args.lr_base_rate* (0.1 ** (epoch // 30))
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
 
 if __name__ == '__main__':
-    main()
+        main()
