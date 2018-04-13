@@ -162,7 +162,7 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot
                     100. * batch_idx / len(train_loader), losses.val))
             logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
-        if epoch.is_integer() and save == 1:
+        if epoch % snapshot_interval == 0 and save == 1:
             save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
             number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
             if number_dec is '':
@@ -171,6 +171,7 @@ def train(epoch, model, train_loader, optimizer, save, snapshot_prefix, snapshot
             snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
             logging.info('Snapshotting to %s', snapshot_file)
             torch.save (save_state, snapshot_file)
+            logging.info('Snapshot saved.')
 
 def validate(epoch, model, validation_loader):
     losses = average_meter()

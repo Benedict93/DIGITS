@@ -424,8 +424,7 @@ class PyTorchTrainTask(TrainTask):
 
         for filename in os.listdir(snapshot_dir):
             # find models
-            match = re.match(r'%s_(\d+)\.?(\d*)(_Weights|_Model)\.t7' %
-                             os.path.basename(self.snapshot_prefix), filename)
+            match = re.match(r'%s_(\d+)\.?(\d*)\.pth.tar\.index$' % self.snapshot_prefix, filename)
             if match:
                 epoch = 0
                 if match.group(2) == '':
