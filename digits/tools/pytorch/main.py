@@ -35,7 +35,7 @@ parser = argparse.ArgumentParser(description='Process model parameters in Pytorc
 
 # Basic Model Parameters
 parser.add_argument('--batch_size', type=int, default=10,
-                    help='input batch size for training (default: 16)')
+                    help='input batch size for training (default: 10)')
 parser.add_argument('--croplen', type=int, default=0,
                     help='Crop (x and y). A zero value means no cropping will be applied (default: 0)')
 parser.add_argument('--epoch', type=int, default=10,
@@ -161,12 +161,13 @@ def train(epoch, model, train_loader, optimizer, criterion):
         loss.backward()
         optimizer.step()
 
-        if batch_idx % log_interval == 0 and epoch != 0:
-            print('Train Epoch: {}\t'
-                 'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
-                 'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 
-                    100. * batch_idx / len(train_loader), losses.val))
-            logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+        if batch_idx % log_interval == 0:
+            if epoch != 0:
+                print('Train Epoch: {}\t'
+                     'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
+                     'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 
+                        100. * batch_idx / len(train_loader), losses.val))
+                logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
             epoch += 0.1
             if epoch.is_integer():
                 epoch = intial_epoch + 1
@@ -357,10 +358,8 @@ def main():
         if args.validation_db and epoch % args.validation_interval == 0:
             validate(epoch, model, validation_loader, criterion)
 
-    """
     #Final validation pass 
-        validate(args.epoch, model, validation_loader, criterion)
-    """
+    validate(args.epoch, model, validation_loader, criterion)
 
 if __name__ == '__main__':
         main()
