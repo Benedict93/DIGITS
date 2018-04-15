@@ -189,8 +189,15 @@ $("#dataset").change();
 {% for choice in form.solver_type.choices %}
 {% for fw in frameworks %}
 {% if fw.supports_solver_type(choice[0]) %}
-{% if fw.supports_loss_function(choice[0]) %}
 $("select[name=solver_type] > option[value={{choice[0]}}]").addClass("{{fw.get_id()}}");
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+{% for choice in form.loss_function.choices %}
+{% for fw in frameworks %}
+{% if fw.supports_loss_function(choice[0]) %}
+$("select[name=loss_function] > option[value={{choice[0]}}]").addClass("{{fw.get_id()}}");
 {% endif %}
 {% endfor %}
 {% endfor %}
