@@ -205,6 +205,45 @@ class PyTorchTrainTask(TrainTask):
         if self.random_seed is not None:
             args.append('--seed=%s' % self.random_seed)
  
+        if self.loss_function == 'NLL':
+            args.append('--loss=nll')
+        elif self.loss_function  == 'MSE':
+            args.append('--loss=mse')
+        elif self.loss_function  == 'BSE':
+            args.append('--loss=bse')
+        elif self.loss_function  == 'PNLL':
+            args.append('--loss=pnll')
+        elif self.loss_function  == 'COSEMB':
+            args.append('--loss=cosemb')
+        elif self.loss_function  == 'CROSSEN':
+            args.append('--loss=crossen')
+        elif self.loss_function  == 'HINGEEMB':
+            args.append('--loss=hingemb')
+        elif self.loss_function  == 'KLDIV':
+            args.append('--loss=kldiv')
+        elif self.loss_function == 'L1':
+            args.append('--loss=l1')
+        elif self.loss_function  == 'MR':
+            args.append('--loss=mr')
+        elif self.loss_function  == 'MLM':
+            args.append('--loss=mlm')
+        elif self.loss_function  == 'MLSM':
+            args.append('--loss=mlsm')
+        elif self.loss_function  == 'MM':
+            args.append('--loss=mm')
+        elif self.loss_function  == 'BCELOGITS':
+            args.append('--loss=bcelogits')
+        elif self.loss_function  == 'SL1':
+            args.append('--loss=sl1')
+        elif self.loss_function  == 'SM':
+            args.append('--loss=sm')
+        elif self.loss_function  == 'TM':
+            args.append('--loss=tm')
+        
+        else:
+            raise ValueError('Unknown loss_function %s' % self.loss_function)
+
+
         if self.solver_type == 'SGD':
             args.append('--optimization=sgd')
         elif self.solver_type == 'NESTEROV':

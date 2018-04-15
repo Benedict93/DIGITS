@@ -94,7 +94,7 @@ class Scheduler:
     Coordinates execution of Jobs
     """
 
-    def __init__(self, gpu_list=None, verbose=True):
+    def __init__(self, gpu_list=None, verbose=False:
         """
         Keyword arguments:
         gpu_list -- a comma-separated string which is a list of GPU id's

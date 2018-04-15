@@ -51,6 +51,7 @@ class CaffeFramework(Framework):
 
     SUPPORTED_DATA_TRANSFORMATION_TYPES = ['MEAN_SUBTRACTION', 'CROPPING']
     SUPPORTED_DATA_AUGMENTATION_TYPES = []
+    SUPPORTED_LOSS_FUNCTIONS = []
 
     @override
     def __init__(self):

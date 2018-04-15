@@ -55,6 +55,9 @@ parser.add_argument('--networkDirectory', default='',
 parser.add_argument('--optimization', default='sgd',
                     choices=['sgd', 'nag', 'adagrad', 'rmsprop', 'adadelta', 'adam', 'sparseadam', 'adamax', 'asgd', 'rprop'],
                     help='Optimization method')
+parser.add_argument('--loss', default='nll',
+                    choices=['nll', 'mse', 'bse', 'pnll', 'cosemb', 'crossen', 'hingemeb', 'kldiv', 'l1', 'mr', 'mlm', 'mlsm','mm', 'bcelogits', 'sl1', 'sm', 'tm'],
+                    help='Loss function')
 parser.add_argument('--save', default='results',
                     help='Save directory')
 parser.add_argument('--seed', type=int, default=0,
@@ -126,13 +129,14 @@ def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
 
-def train(epoch, model, train_loader, optimizer):
+def train(epoch, model, train_loader, optimizer, criterion):
     losses = average_meter()
     accuracy = average_meter()
     initial_epoch = epoch
     epoch = float(epoch)
     log_interval = len(train_loader) / 10
 
+    # Switch to train mode
     model.train()
 
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -140,14 +144,19 @@ def train(epoch, model, train_loader, optimizer):
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
 
+        # Compute output
         output = model(data)
-        loss = F.nll_loss(output, target)
+
+        # Apply loss function and measure loss
+        loss = criterion(output, target)
         losses.update(loss.data[0], data.size(0))
 
+        # Measure accuracy
         pred = output.data.max(1)[1]
         prec = pred.eq(target.data).cpu().sum()
         accuracy.update(float(prec) / data.size(0), data.size(0))
 
+        # Compute gradient and SGD step
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -163,15 +172,13 @@ def train(epoch, model, train_loader, optimizer):
                     100. * batch_idx / len(train_loader), losses.val))
             logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
 
-    
 
-
-
-def validate(epoch, model, validation_loader):
+def validate(epoch, model, validation_loader, criterion):
     losses = average_meter()
     accuracy = average_meter()
     epoch = float(epoch)
 
+    # Switch to evaluate mode
     model.eval()
 
     for data, target in validation_loader:
@@ -179,10 +186,14 @@ def validate(epoch, model, validation_loader):
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target, volatile=True)
 
+        # Compute output
         output = model(data)
-        loss = F.nll_loss(output, target)
+
+        # Apply loss function and measure loss
+        loss = criterion(output, target)
         losses.update(loss.data[0], data.size(0))
 
+        # Measure accuracy
         pred = output.data.max(1)[1]
         prec = pred.eq(target.data).cpu().sum()
         accuracy.update(float(prec) / data.size(0), data.size(0))
@@ -266,6 +277,7 @@ def main():
         logging.error("The user model class 'Net' is not a class.")
         exit(-1)
 
+    # Data Loaders
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
         train_loader = torch.utils.data.DataLoader(
@@ -279,6 +291,7 @@ def main():
     if args.cuda:
         model.cuda()
 
+    # Optimizer - under torch.optim 
     if args.optimization == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
     elif args.optimization =='nag':
@@ -300,20 +313,56 @@ def main():
     elif args.optimization =='rprop':
         optimizer = optim.Rprop(model.parameters(), lr=args.lr_base_rate)
 
+    # Loss function - under torch.nn.functional
+    if args.loss == 'nll':
+        criterion = F.nll_loss()
+    elif args.loss =='mse':
+        criterion = F.mse_loss()
+    elif args.loss =='bse':
+        criterion = F.binary_cross_entropy()
+    elif args.loss =='pnll':
+        criterion = F.poisson_nll_loss()
+    elif args.loss =='cosemb':
+        criterion = F.cosine_embedding_loss()
+    elif args.loss =='crossen':
+        criterion = F.cross_entropy()
+    elif args.loss =='hingemeb':
+        criterion = F.hinge_embedding_loss()
+    elif args.loss =='kldiv':
+        criterion = F.kl_div()
+    elif args.loss =='l1':
+        criterion = F.l1_loss()
+    elif args.loss =='mr':
+        criterion = F.margin_ranking_loss()
+    elif args.loss =='mlm':
+        criterion = F.multilabel_margin_loss()
+    elif args.loss =='mlsm':
+        criterion = F.multilabel_soft_margin_loss()
+    elif args.loss =='mm':
+        criterion = F.multi_margin_loss()
+    elif args.loss =='bcelogits':
+        criterion = F.binary_cross_entropy_with_logits()
+    elif args.loss =='sl1':
+        ocriterion = F.smooth_l1_loss()
+    elif args.loss =='sm':
+        criterion = F.soft_margin_loss()
+    elif args.loss =='tm':
+        criterion = F.triplet_margin_loss()
+
+
     
     logging.info('Started training the model')
 
-    for epoch in range(current_epoch, args.epoch):
+    for epoch in range(0, args.epoch):
         #Training network
-        train(epoch, model, train_loader, optimizer)
+        train(epoch, model, train_loader, optimizer, criterion)
 
         #For every validation interval, perform validation
         if args.validation_db and epoch % args.validation_interval == 0:
             validate(epoch, model, validation_loader)
         
         #Final validation pass
-        validate(args.epoch, model, validation_loader)
-
+        validate(args.epoch, model, validation_loader, criterion)
 
 if __name__ == '__main__':
         main()

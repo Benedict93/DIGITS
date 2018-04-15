@@ -159,6 +159,41 @@ class ModelForm(Form):
                  "need a bigger batch size for training but it doesn't fit in memory).")
     )
 
+    #Loss functions - For PyTorch from torch.nn
+    
+    loss_function = utils.forms.SelectField(
+        'Loss function',
+        choices=[
+            ('NLL', 'Negative Log likelihood Loss'),
+            ('MSE', 'Mean Squared Error Loss'),
+            ('BSE', 'Binary Cross Entropy Loss'),
+            ('PNLL', 'Poisson negative log likelihood Loss.'),
+            ('COSEMB', 'Cosine Embedding Loss'),
+            ('CROSSEN', 'Cross Entropy Loss'),
+            ('HINGEEMB', 'Hinge Embedding Loss'),
+            ('KLDIV', 'Kullback-Leibler Divergence Loss'),
+            ('L1', 'L1 Loss'),
+            ('MR', 'Margin Ranking Loss'),
+            ('MLM', 'Multi Label Margin Loss'),
+            ('MLSM', 'Multi Label Soft Margin Loss'),
+            ('MM', 'Multi Margin Loss'),
+            ('BCELOGITS', 'Binary Cross Entropy with Logits Loss'),
+            ('SL1', 'Smooth L1 Loss'),
+            ('SM', 'Soft Margin Loss'),
+            ('TM', 'Triplet Margin Loss'),
+
+        ],
+        default='NLL',
+        tooltip="What type of loss function will be used?",
+    )
+
+    def validate_loss_function(form, field):
+        fw = frameworks.get_framework_by_id(form.framework)
+        if fw is not None:
+            if not fw.supports_loss_function(field.data):
+                raise validators.ValidationError(
+                    'Loss Function not supported by this framework')
+
     # Solver types
 
     solver_type = utils.forms.SelectField(

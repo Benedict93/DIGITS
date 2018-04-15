@@ -265,6 +265,7 @@ def create(extension_id=None):
                 use_mean=form.use_mean.data,
                 network=network,
                 random_seed=form.random_seed.data,
+                loss_function=form.loss_function.data,
                 solver_type=form.solver_type.data,
                 rms_decay=form.rms_decay.data,
                 shuffle=form.shuffle.data,
