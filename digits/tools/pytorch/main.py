@@ -277,7 +277,6 @@ def main():
         logging.error("The user model class 'Net' is not a class.")
         exit(-1)
 
-    # Data Loaders
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
         train_loader = torch.utils.data.DataLoader(
@@ -313,41 +312,41 @@ def main():
     elif args.optimization =='rprop':
         optimizer = optim.Rprop(model.parameters(), lr=args.lr_base_rate)
 
-    # Loss function - under torch.nn.functional
+    # Loss function - torch.nn 
     if args.loss == 'nll':
-        criterion = F.nll_loss()
+        criterion = nn.NLLLoss()
     elif args.loss =='mse':
-        criterion = F.mse_loss()
+        criterion = nn.MSELoss()
     elif args.loss =='bse':
-        criterion = F.binary_cross_entropy()
+        criterion = nn.BCELoss()
     elif args.loss =='pnll':
-        criterion = F.poisson_nll_loss()
+        criterion = nn.PoissonNLLLoss()
     elif args.loss =='cosemb':
-        criterion = F.cosine_embedding_loss()
+        criterion = nn.CosineEmbeddingLoss()
     elif args.loss =='crossen':
-        criterion = F.cross_entropy()
+        criterion = nn.CrossEntropyLoss()
     elif args.loss =='hingemeb':
-        criterion = F.hinge_embedding_loss()
+        criterion = nn.HingeEmbeddingLoss()
     elif args.loss =='kldiv':
-        criterion = F.kl_div()
+        criterion = nn.KLDivLoss()
     elif args.loss =='l1':
-        criterion = F.l1_loss()
+        criterion = nn.L1Loss()
     elif args.loss =='mr':
-        criterion = F.margin_ranking_loss()
+        criterion = nn.MarginRankingLoss()
     elif args.loss =='mlm':
-        criterion = F.multilabel_margin_loss()
+        criterion = nn.MultiLabelMarginLoss()
     elif args.loss =='mlsm':
-        criterion = F.multilabel_soft_margin_loss()
+        criterion = nn.MultiLabelSoftMarginLoss()
     elif args.loss =='mm':
-        criterion = F.multi_margin_loss()
+        criterion = nn.MultiMarginLoss()
     elif args.loss =='bcelogits':
-        criterion = F.binary_cross_entropy_with_logits()
+        criterion = nn.BCEWithLogitsLoss()
     elif args.loss =='sl1':
-        ocriterion = F.smooth_l1_loss()
+        ocriterion = nn.SmoothL1Loss()
     elif args.loss =='sm':
-        criterion = F.soft_margin_loss()
+        criterion = nn.SoftMarginLoss()
     elif args.loss =='tm':
-        criterion = F.triplet_margin_loss()
+        criterion = nn.TripletMarginLoss()
 
 
     
@@ -359,7 +358,7 @@ def main():
 
         #For every validation interval, perform validation
         if args.validation_db and epoch % args.validation_interval == 0:
-            validate(epoch, model, validation_loader)
+            validate(epoch, model, validation_loader, criterion)
         
         #Final validation pass
         validate(args.epoch, model, validation_loader, criterion)
