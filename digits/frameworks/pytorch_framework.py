@@ -37,7 +37,7 @@ class PyTorchFramework(Framework):
     SUPPORTED_SOLVER_TYPES = ['SGD','NESTEROV', 'ADAGRAD','RMSPROP','ADADELTA', 'ADAM', 'SPARSEADAM','ADAMAX','ASGD','LBFGS', 'RPROP',]
     
     # under torch.nn 
-    SUPPORTED_LOSS_FUNCTIONs = ['NLL','MSE', 'BSE','PNLL','COSEMB', 'CROSSEN', 'HINGEEMB','KLDIV','L1','MR', 'MLM','MLSM','MM','BCELOGITS','SL1','SM', 'TM',]
+    SUPPORTED_LOSS_FUNCTIONS = ['NLL','MSE', 'BSE','PNLL','COSEMB', 'CROSSEN', 'HINGEEMB','KLDIV','L1','MR', 'MLM','MLSM','MM','BCELOGITS','SL1','SM', 'TM',]
 
     # under torchvision.transforms package
     """ 
