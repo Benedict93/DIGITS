@@ -30,8 +30,6 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 
-import pt_data
-
 
 parser = argparse.ArgumentParser(description='Process model parameters in Pytorch')
 
@@ -333,9 +331,6 @@ def main():
                                transforms.Normalize((0.1307,), (0.3081,))
                            ])
 
-    train_set = pt_data.LMBD_Loader(args.train_db, transform)
-    val_set = pt_data.LMDB_Loader(args.validation_db, transform)
-
     # Import the network file
     path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
     exec(open(path_network).read(), globals())
@@ -351,9 +346,13 @@ def main():
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
-        train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+        train_loader = torch.utils.data.DataLoader(
+            datasets.MNIST('../data', train=True, download=True,
+                           transform=transform), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
-        validation_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+        validation_loader = torch.utils.data.DataLoader(
+            datasets.MNIST('../data', train=False, download=True,
+                           transform=transform), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     model = Net()
     if args.cuda:
         model.cuda()
