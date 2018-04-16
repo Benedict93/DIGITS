@@ -123,8 +123,15 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO)
 
-#CONSTANTS
-log_interval = 10
+flipflag = self.aug_dict['aug_flip']
+if flipflag == 'fliplr' or flipflag == 'fliplrud':
+    data_transform = transforms.Compose([torchvision.transforms.RandomHorizontalFlip(p=0.5)])
+if flipflag == 'fliplr' or flipflag == 'fliplrud':
+    data_transform = torchvision.transforms.RandomVerticalFlip(p=0.5)
+aug_whitening = self.aug_dict['aug_whitening']
+    if aug_whitening:
+        torchvision.tranforms.Normalize(mean,std)
+
 
 
 def loadLabels(filename):
@@ -253,6 +260,13 @@ def main():
             exit(-1)
         logging.info("Found %s classes", nclasses)
 
+    if pt_data.get_backend_of_source(args.train_db) == 'lmdb':
+        train_dataset = lmdb_loader(args.train_db, transform)
+        validation_dataset = lmbd_loader(args.validation_db, transform)
+    if pt_data.get_backend_of_source(args.train_db) == 'hdf5':
+        train_dataset = hdf5_loader(args.train_db, transform)
+        validation_dataset = hdf5_loader(args.validation_db, transform)
+    
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
@@ -278,19 +292,36 @@ def main():
 
     if args.optimization == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
+    elif args.optimization =='nag':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate,momentum=args.momentum, nesterov=True)
+    elif args.optimization =='adagrad':
+        optimizer = optim.Adagrad(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='rmsprop':
+        optimizer = optim.RMSprop(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='adadelta':
+        optimizer = optim.adadelta(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='adam':
+        optimizer = optim.Adam(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='sparseadam':
+        optimizer = optim.SparseAdam(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='adamax':
+        optimizer = optim.Adamax(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='asgd':
+        optimizer = optim.ASGD(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization =='rprop':
+        optimizer = optim.Rprop(model.parameters(), lr=args.lr_base_rate)
 
     logging.info('Started training the model')
 
-    for epoch in range(1, args.epoch+1):
-        if args.snapshotInterval:
-            save = 1 
+    current_epoch = 0
+    for epoch in range(current_epoch, args.epoch):
         train(epoch, model, train_loader, optimizer)
-        current_epoch = 0
-        if args.validation_db and epoch >= next_validation:
-            validate(epoch, model, validation_loader)
-            next_validation = (round(float(current_epoch) / args.validation_interval) + 1) * \
-                              args.validation_interval
 
+        if args.validation_db and epoch % args.validation_interval == 0:
+            validate(epoch, model, validation_loader)
+        
+        #Final validation pass
+        validate(args.epoch, model, validation_loader)
 
 if __name__ == '__main__':
         main()
