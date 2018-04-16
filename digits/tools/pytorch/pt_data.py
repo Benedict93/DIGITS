@@ -13,7 +13,6 @@ import torch
 import torchvision
 
 
-
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO)
 
@@ -26,9 +25,10 @@ class LMDB_Loader(data.Dataset):
         self.db_path= db_path
 
         self.lmdb_env = lmdb.open(self.db_path, readonly=True)
-        self.lmdb_txn = self.lmdb_env.begin(buffers=False)
 
-        self.length = self.lmdb_env.stat()['entries']
+        with self.lmbd_env.begin(write=False) as txn:
+            self.length = txn.stat()['entries']
+            self.keys = [key for key, _ in txn.cursor()]
 
     def __getitem__(self, index):
 
@@ -36,7 +36,7 @@ class LMDB_Loader(data.Dataset):
         datum = caffe.proto.caffe_pb2.Datum()
         lmdb_cursor = self.lmdb_txn.cursor()
         key_index ='{:08}'.format(index)
-        value = lmdb_cursor.get(key_index)
+        value = lmdb_cursor.get(keys[index])
         datum.ParseFromString(value)
         
         label = datum.label
