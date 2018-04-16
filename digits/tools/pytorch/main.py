@@ -148,7 +148,7 @@ def train(epoch, model, train_loader, optimizer, criterion):
         output = model(data)
 
         # Apply loss function and measure loss
-        loss = criterion(output, target)
+        loss = F.nll_loss(output, target)
         losses.update(loss.data[0], data.size(0))
 
         # Measure accuracy
@@ -162,7 +162,7 @@ def train(epoch, model, train_loader, optimizer, criterion):
         optimizer.step()
 
         if batch_idx % log_interval == 0:
-            if epoch != 0:
+            if epoch.is_integer() == 0:
                 print('Train Epoch: {}\t'
                      'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
                      'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 
@@ -173,7 +173,7 @@ def train(epoch, model, train_loader, optimizer, criterion):
 def validate(epoch, model, validation_loader, criterion):
     losses = average_meter()
     accuracy = average_meter()
-    epoch = float(epoch)
+    epoch = float(epoch) + 1
 
     # Switch to evaluate mode
     model.eval()
@@ -187,7 +187,7 @@ def validate(epoch, model, validation_loader, criterion):
         output = model(data)
 
         # Apply loss function and measure loss
-        loss = criterion(output, target)
+        loss = F.nll_loss(output, target)
         losses.update(loss.data[0], data.size(0))
 
         # Measure accuracy
@@ -348,15 +348,19 @@ def main():
     
     logging.info('Started training the model')
 
+    # Intiial forward pass
+    validate(0, model, validation_loader, criterion)
+
     for epoch in range(0, args.epoch):
-        #Training network
+
+        # Training network
         train(epoch, model, train_loader, optimizer, criterion)
 
-        #For every validation interval, perform validation
+        # For every validation interval, perform validation
         if args.validation_db and epoch % args.validation_interval == 0:
             validate(epoch, model, validation_loader, criterion)
 
-    #Final validation pass 
+    # Final validation pass 
     validate(args.epoch, model, validation_loader, criterion)
 
 if __name__ == '__main__':
