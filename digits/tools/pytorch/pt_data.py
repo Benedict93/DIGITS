@@ -26,8 +26,8 @@ class LMDB_Loader(data.Dataset):
 
         self.lmdb_env = lmdb.open(self.db_path, readonly=True)
 
-        lmdb_txn = self.lmdb_env.begin()
-        
+        self.lmdb_txn = self.lmdb_env.begin()
+
         with self.lmdb_env.begin(write=False) as txn:
             self.length = txn.stat()['entries']
             self.keys = [key for key, _ in txn.cursor()]
