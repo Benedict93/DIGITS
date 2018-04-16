@@ -129,7 +129,7 @@ def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
 
-def train(epoch, model, train_loader, optimizer, criterion, loss_function):
+def train(epoch, model, train_loader, optimizer, loss_function):
     losses = average_meter()
     accuracy = average_meter()
     initial_epoch = epoch
@@ -382,7 +382,7 @@ def main():
     logging.info('Started training the model')
 
     # Intiial forward pass
-    validate(0, model, validation_loader, criterion, args.loss)
+    validate(0, model, validation_loader, args.loss)
 
     for epoch in range(0, args.epoch):
 
@@ -391,7 +391,7 @@ def main():
 
         # For every validation interval, perform validation
         if args.validation_db and epoch % args.validation_interval == 0:
-            validate(epoch + 1, model, validation_loader, criterion, args.loss)
+            validate(epoch + 1, model, validation_loader, args.loss)
 
 if __name__ == '__main__':
         main()
