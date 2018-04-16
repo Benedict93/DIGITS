@@ -37,8 +37,7 @@ class LMDB_Loader(data.Dataset):
         #TODO: get item from lmdb file
         datum = caffe.proto.caffe_pb2.Datum()
         lmdb_cursor = self.lmdb_txn.cursor()
-        key_index ='{:08}'.format(index)
-        value = lmdb_cursor.get(keys[index])
+        value = lmdb_cursor.get(self.keys[index])
         datum.ParseFromString(value)
         
         label = datum.label
