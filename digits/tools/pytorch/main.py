@@ -129,7 +129,7 @@ def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
 
-def train(epoch, model, train_loader, optimizer, criterion):
+def train(epoch, model, train_loader, optimizer, criterion, loss_function):
     losses = average_meter()
     accuracy = average_meter()
     initial_epoch = epoch
@@ -147,8 +147,43 @@ def train(epoch, model, train_loader, optimizer, criterion):
         # Compute output
         output = model(data)
 
-        # Apply loss function and measure loss
-        loss = F.nll_loss(output, target)
+        # Define loss function - under torch.nn.functional
+        if loss_function == 'nll':
+            loss = F.nll_loss(output, target)
+        elif loss_function =='mse':
+            loss = F.mse_loss(output, target)
+        elif loss_function =='bse':
+            loss = F.binary_cross_entropy(output, target)
+        elif loss_function =='pnll':
+            loss = F.poisson_nll_loss(output, target)
+        elif loss_function =='cosemb':
+            loss = F.cosine_embedding_loss(output, target)
+        elif loss_function =='crossen':
+            loss = F.cross_entropy(output, target)
+        elif loss_function =='hingemeb':
+            loss = F.hinge_embedding_loss(output, target)
+        elif loss_function =='kldiv':
+            loss = F.kl_div(output, target)
+        elif loss_function =='l1':
+            loss = F.l1_loss(output, target)
+        elif loss_function =='mr':
+            loss = F.margin_ranking_loss(output, target)
+        elif loss_function =='mlm':
+            loss = F.multilabel_margin_loss(output, target)
+        elif loss_function =='mlsm':
+            loss = F.multilabel_soft_margin_loss(output, target)
+        elif loss_function =='mm':
+            loss = F.multi_margin_loss(output, target)
+        elif loss_function =='bcelogits':
+            loss = F.binary_cross_entropy_with_logits(output, target)
+        elif loss_function =='sl1':
+            oloss = F.smooth_l1_loss(output, target)
+        elif loss_function =='sm':
+            loss = F.soft_margin_loss(output, target)
+        elif loss_function =='tm':
+            loss = F.triplet_margin_loss(output, target)
+
+        # Measure loss
         losses.update(loss.data[0], data.size(0))
 
         # Measure accuracy
@@ -170,7 +205,7 @@ def train(epoch, model, train_loader, optimizer, criterion):
                 logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
             epoch += 0.1
 
-def validate(epoch, model, validation_loader, criterion):
+def validate(epoch, model, validation_loader, loss_function):
     losses = average_meter()
     accuracy = average_meter()
     epoch = float(epoch)
@@ -186,8 +221,43 @@ def validate(epoch, model, validation_loader, criterion):
         # Compute output
         output = model(data)
 
-        # Apply loss function and measure loss
-        loss = F.nll_loss(output, target)
+        # Define loss function - under torch.nn.functional
+        if loss_function == 'nll':
+            loss = F.nll_loss(output, target)
+        elif loss_function =='mse':
+            loss = F.mse_loss(output, target)
+        elif loss_function =='bse':
+            loss = F.binary_cross_entropy(output, target)
+        elif loss_function =='pnll':
+            loss = F.poisson_nll_loss(output, target)
+        elif loss_function =='cosemb':
+            loss = F.cosine_embedding_loss(output, target)
+        elif loss_function =='crossen':
+            loss = F.cross_entropy(output, target)
+        elif loss_function =='hingemeb':
+            loss = F.hinge_embedding_loss(output, target)
+        elif loss_function =='kldiv':
+            loss = F.kl_div(output, target)
+        elif loss_function =='l1':
+            loss = F.l1_loss(output, target)
+        elif loss_function =='mr':
+            loss = F.margin_ranking_loss(output, target)
+        elif loss_function =='mlm':
+            loss = F.multilabel_margin_loss(output, target)
+        elif loss_function =='mlsm':
+            loss = F.multilabel_soft_margin_loss(output, target)
+        elif loss_function =='mm':
+            loss = F.multi_margin_loss(output, target)
+        elif loss_function =='bcelogits':
+            loss = F.binary_cross_entropy_with_logits(output, target)
+        elif loss_function =='sl1':
+            oloss = F.smooth_l1_loss(output, target)
+        elif loss_function =='sm':
+            loss = F.soft_margin_loss(output, target)
+        elif loss_function =='tm':
+            loss = F.triplet_margin_loss(output, target)
+
+        # Measure loss
         losses.update(loss.data[0], data.size(0))
 
         # Measure accuracy
@@ -308,57 +378,20 @@ def main():
     elif args.optimization =='rprop':
         optimizer = optim.Rprop(model.parameters(), lr=args.lr_base_rate)
 
-    # Loss function - torch.nn 
-    if args.loss == 'nll':
-        criterion = nn.NLLLoss()
-    elif args.loss =='mse':
-        criterion = nn.MSELoss()
-    elif args.loss =='bse':
-        criterion = nn.BCELoss()
-    elif args.loss =='pnll':
-        criterion = nn.PoissonNLLLoss()
-    elif args.loss =='cosemb':
-        criterion = nn.CosineEmbeddingLoss()
-    elif args.loss =='crossen':
-        criterion = nn.CrossEntropyLoss()
-    elif args.loss =='hingemeb':
-        criterion = nn.HingeEmbeddingLoss()
-    elif args.loss =='kldiv':
-        criterion = nn.KLDivLoss()
-    elif args.loss =='l1':
-        criterion = nn.L1Loss()
-    elif args.loss =='mr':
-        criterion = nn.MarginRankingLoss()
-    elif args.loss =='mlm':
-        criterion = nn.MultiLabelMarginLoss()
-    elif args.loss =='mlsm':
-        criterion = nn.MultiLabelSoftMarginLoss()
-    elif args.loss =='mm':
-        criterion = nn.MultiMarginLoss()
-    elif args.loss =='bcelogits':
-        criterion = nn.BCEWithLogitsLoss()
-    elif args.loss =='sl1':
-        ocriterion = nn.SmoothL1Loss()
-    elif args.loss =='sm':
-        criterion = nn.SoftMarginLoss()
-    elif args.loss =='tm':
-        criterion = nn.TripletMarginLoss()
-
-
     
     logging.info('Started training the model')
 
     # Intiial forward pass
-    validate(0, model, validation_loader, criterion)
+    validate(0, model, validation_loader, criterion, args.loss)
 
     for epoch in range(0, args.epoch):
 
         # Training network
-        train(epoch, model, train_loader, optimizer, criterion)
+        train(epoch, model, train_loader, optimizer, args.loss)
 
         # For every validation interval, perform validation
         if args.validation_db and epoch % args.validation_interval == 0:
-            validate(epoch + 1, model, validation_loader, criterion)
+            validate(epoch + 1, model, validation_loader, criterion, args.loss)
 
 if __name__ == '__main__':
         main()
