@@ -30,7 +30,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 
-import pt_data
+import pt_data.LMDB_Loader
 
 
 parser = argparse.ArgumentParser(description='Process model parameters in Pytorch')
@@ -333,7 +333,7 @@ def main():
                                transforms.Normalize((0.1307,), (0.3081,))
                            ])
 
-    train_set = pt_data.LMBD_Loader(args.train_db, transform)
+    train_set = pt_data.LMDB_Loader(args.train_db, transform)
     val_set = pt_data.LMDB_Loader(args.validation_db, transform)
 
     # Import the network file
