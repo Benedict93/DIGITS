@@ -173,7 +173,7 @@ def train(epoch, model, train_loader, optimizer, criterion):
 def validate(epoch, model, validation_loader, criterion):
     losses = average_meter()
     accuracy = average_meter()
-    epoch = float(epoch) + 1
+    epoch = float(epoch)
 
     # Switch to evaluate mode
     model.eval()
@@ -358,10 +358,7 @@ def main():
 
         # For every validation interval, perform validation
         if args.validation_db and epoch % args.validation_interval == 0:
-            validate(epoch, model, validation_loader, criterion)
-
-    # Final validation pass 
-    validate(args.epoch, model, validation_loader, criterion)
+            validate(epoch + 1, model, validation_loader, criterion)
 
 if __name__ == '__main__':
         main()
