@@ -30,7 +30,8 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 
-import pt_data.LMDB_Loader
+import pt_data
+from pt_data import LMDB_Loader
 
 
 parser = argparse.ArgumentParser(description='Process model parameters in Pytorch')
