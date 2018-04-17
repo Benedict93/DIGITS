@@ -1,7 +1,6 @@
-import os
-
 from __future__ import print_function
 
+import os
 
 from PIL import Image
 import os
