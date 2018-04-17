@@ -7,6 +7,7 @@ import sys
 import caffe
 import lmdb
 import logging
+import numpy as np
 
 import torch.utils.data as data
 import torch
