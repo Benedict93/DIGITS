@@ -41,7 +41,8 @@ class LMDB_Loader(data.Dataset):
         datum.ParseFromString(value)
         print('{},{},{}, {}{}{}'.format(value, datum.data, len(datum.data), datum.channels, datum.height, datum.width))
         label = datum.label
-        
+        data = np.array(datum.float_data).astype(float).reshape(datum.channels, datum.height, datum.width)
+
         # TODO: convert to tensor
         data = torchvision.transforms.ToTensor(data)
         label = torchvision.transforms.ToTensor(label)
