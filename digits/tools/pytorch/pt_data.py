@@ -27,7 +27,7 @@ class LMDB_Loader(data.Dataset):
         self.lmdb_env = lmdb.open(self.db_path, readonly=True)
 
         self.lmdb_txn = self.lmdb_env.begin()
-
+ 
         with self.lmdb_env.begin(write=False) as txn:
             self.length = txn.stat()['entries']
             self.keys = [key for key, _ in txn.cursor()]
@@ -35,11 +35,11 @@ class LMDB_Loader(data.Dataset):
     def __getitem__(self, index):
 
         #TODO: get item from lmdb file
-        datum = caffe.proto.caffe_pb2.Datum()
+        datum = caffe.proto.caffe_pb2.Datum() 
         lmdb_cursor = self.lmdb_txn.cursor()
         value = lmdb_cursor.get(self.keys[index])
         datum.ParseFromString(value)
-        
+        print('{},{},{}, {}{}{}'.format(value, datum.data, len(datum.data), datum.channels, datum.height, datum.width))
         label = datum.label
         data = caffe.io.datum_to_array(datum)
 
