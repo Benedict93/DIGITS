@@ -1,5 +1,8 @@
 import os
 
+from __future__ import print_function
+
+
 from PIL import Image
 import os
 import os.path
@@ -42,7 +45,8 @@ class LMDB_Loader(data.Dataset):
         datum.ParseFromString(value)
         print('{},{},{}, {}{}{}'.format(value, datum.data, len(datum.data), datum.channels, datum.height, datum.width))
         label = datum.label
-        data = np.array(datum.float_data).astype(float).reshape(datum.channels, datum.height, datum.width)
+        flat_x = np.fromstring(datum.data, dtype=np.uint8)
+        data = flat_x.reshape(datum.channels, datum.height, datum.width)
 
         # TODO: convert to tensor
         data = torchvision.transforms.ToTensor(data)
