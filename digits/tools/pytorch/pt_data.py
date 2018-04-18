@@ -11,8 +11,8 @@ import lmdb
 import logging
 import numpy as np
 
-import torch.utils.data as data
 import torch
+import torch.utils.data as data
 import torchvision
 
 
@@ -44,12 +44,14 @@ class LMDB_Loader(data.Dataset):
         datum.ParseFromString(value)
         print('{},{},{}, {}{}{}'.format(value, datum.data, len(datum.data), datum.channels, datum.height, datum.width))
         label = datum.label
-        flat_x = np.fromstring(datum.data, dtype=np.uint8)
-        data = flat_x.reshape(datum.channels, datum.height, datum.width)
+
+        data = caffe.io.datum_to_array(datum)
 
         # TODO: convert to tensor
+        """
         data = torchvision.transforms.ToTensor(data)
         label = torchvision.transforms.ToTensor(label)
+        """
 
         #TODO: do transforms for image
         if self.transform is not None:
