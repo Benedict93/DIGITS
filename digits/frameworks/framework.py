@@ -47,6 +47,15 @@ class Framework(object):
         assert isinstance(self.SUPPORTED_SOLVER_TYPES, list)
         return solver_type in self.SUPPORTED_SOLVER_TYPES
 
+    def supports_loss_function(self, loss_function):
+        """
+        return whether framework supports this loss_function
+        """
+        if not hasattr(self, 'SUPPORTED_LOSS_FUNCTIONS'):
+            raise NotImplementedError
+        assert isinstance(self.SUPPORTED_LOSS_FUNCTIONS, list)
+        return loss_function in self.SUPPORTED_LOSS_FUNCTIONS
+    
     def validate_network(self, data):
         """
         validate a network (must be implemented in child class)

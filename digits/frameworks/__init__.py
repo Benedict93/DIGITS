@@ -16,6 +16,10 @@ if config_value('tensorflow')['enabled']:
     from .tensorflow_framework import TensorflowFramework
     __all__.append('TensorflowFramework')
 
+if config_value('pytorch')['enabled']:
+    from .pytorch_framework import PyTorchFramework
+    __all__.append('PyTorchFramework')
+
 #
 #  create framework instances
 #
@@ -25,6 +29,9 @@ torch = TorchFramework() if config_value('torch')['enabled'] else None
 
 # tensorflow is optional
 tensorflow = TensorflowFramework() if config_value('tensorflow')['enabled'] else None
+
+# pytorch is optional
+pytorch = PyTorchFramework() if config_value('pytorch')['enabled'] else None
 
 # caffe is mandatory
 caffe = CaffeFramework()
@@ -44,6 +51,8 @@ def get_frameworks():
         frameworks.append(torch)
     if tensorflow:
         frameworks.append(tensorflow)
+    if pytorch:
+        frameworks.append(pytorch)
     return frameworks
 
 
