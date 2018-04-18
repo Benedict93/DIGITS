@@ -200,6 +200,19 @@ def train(epoch, model, train_loader, optimizer, loss_function):
         optimizer.step()
 
         if batch_idx % log_interval == 0:
+            """
+            if epoch.is_integer() and save == 1 and epoch != 0:
+                save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+                number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
+                if number_dec is '':
+                    number_dec = '0'
+                epoch_fmt = "{:." + number_dec + "f}"
+                snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
+                torch.save(save_state, snapshot_file)
+                logging.info('Snapshotting to %s', snapshot_file)
+                logging.info('Snapshot saved.')
+                
+            """
             if epoch.is_integer() == 0:
                 print('Train Epoch: {}\t'
                      'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
@@ -399,7 +412,10 @@ def main():
     validate(0, model, validation_loader, args.loss)
 
     for epoch in range(0, args.epoch):
-
+        """
+        if args.snapshotInterval and epoch % args.validation_interval == 0:
+            save = 1
+        """
         # Training network
         train(epoch, model, train_loader, optimizer, args.loss)
 
