@@ -3,7 +3,7 @@ PyTorch on DIGITS is still a work in progress
 
 Installation for Ubuntu and Mac can be found at [here](http://pytorch.org/)
 
-Recommended Package manager to install PyTorh: Anaconda
+Recommended Package manager to install PyTorch: Anaconda
 
 ## Requirements
 
@@ -24,8 +24,7 @@ Ensure that you are on the latest pip and numpy packages
 
 ## Installation
 
-These instructions are based on [the official PyTorch instructions]
-(http://pytorch.org/)
+These instructions are based on [the official PyTorch instructions](http://pytorch.org/)
 
 PyTorch can be installed via 3 different methods: Anaconda package manager, pip and source
 
