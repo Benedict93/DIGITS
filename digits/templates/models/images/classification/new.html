@@ -486,6 +486,12 @@ function setFramework(fwid)
         $("select[name=solver_type] > option:selected").prop("selected", false);
     }
 
+    $("select[name=loss_function] > option." + fwid).prop('disabled', false);
+    $("select[name=loss_function] > option").not("." + fwid).prop('disabled', true);
+    if (! $("select[name=loss_function] > option:selected").hasClass(fwid)) {
+        $("select[name=loss_function] > option:selected").prop("selected", false);
+    }
+
     if (frameworks[fwid].supports_python_layers_file)
         $("#python-layers").show();
     else

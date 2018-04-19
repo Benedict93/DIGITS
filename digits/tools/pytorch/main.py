@@ -30,10 +30,6 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torchvision import datasets, transforms
 
-import pt_data
-from pt_data import LMDB_Loader
-
-
 parser = argparse.ArgumentParser(description='Process model parameters in Pytorch')
 
 # Basic Model Parameters
@@ -56,10 +52,12 @@ parser.add_argument('--network', default='',
 parser.add_argument('--networkDirectory', default='',
                     help='Directory in which network exists')
 parser.add_argument('--optimization', default='sgd',
-                    choices=['sgd', 'nag', 'adagrad', 'rmsprop', 'adadelta', 'adam', 'sparseadam', 'adamax', 'asgd', 'rprop'],
+                    choices=['sgd', 'nag', 'adagrad', 'rmsprop', 'adadelta', 'adam', 'sparseadam', 'adamax', 'asgd',
+                             'rprop'],
                     help='Optimization method')
 parser.add_argument('--loss', default='nll',
-                    choices=['nll', 'mse', 'bse', 'pnll', 'cosemb', 'crossen', 'hingemeb', 'kldiv', 'l1', 'mr', 'mlm', 'mlsm','mm', 'bcelogits', 'sl1', 'sm', 'tm'],
+                    choices=['nll', 'mse', 'bse', 'pnll', 'cosemb', 'crossen', 'hingemeb', 'kldiv', 'l1', 'mr', 'mlm',
+                             'mlsm', 'mm', 'bcelogits', 'sl1', 'sm', 'tm'],
                     help='Loss function')
 parser.add_argument('--save', default='results',
                     help='Save directory')
@@ -132,7 +130,8 @@ def loadLabels(filename):
     with open(filename) as f:
         return f.readlines()
 
-def train(epoch, model, train_loader, optimizer, loss_function):
+
+def train(epoch, model, train_loader, optimizer, loss_function, save, snapshot_prefix, snapshot_interval):
     losses = average_meter()
     accuracy = average_meter()
     initial_epoch = epoch
@@ -153,37 +152,37 @@ def train(epoch, model, train_loader, optimizer, loss_function):
         # Define loss function - under torch.nn.functional
         if loss_function == 'nll':
             loss = F.nll_loss(output, target)
-        elif loss_function =='mse':
+        elif loss_function == 'mse':
             loss = F.mse_loss(output, target)
-        elif loss_function =='bse':
+        elif loss_function == 'bse':
             loss = F.binary_cross_entropy(output, target)
-        elif loss_function =='pnll':
+        elif loss_function == 'pnll':
             loss = F.poisson_nll_loss(output, target)
-        elif loss_function =='cosemb':
+        elif loss_function == 'cosemb':
             loss = F.cosine_embedding_loss(output, target)
-        elif loss_function =='crossen':
+        elif loss_function == 'crossen':
             loss = F.cross_entropy(output, target)
-        elif loss_function =='hingemeb':
+        elif loss_function == 'hingemeb':
             loss = F.hinge_embedding_loss(output, target)
-        elif loss_function =='kldiv':
+        elif loss_function == 'kldiv':
             loss = F.kl_div(output, target)
-        elif loss_function =='l1':
+        elif loss_function == 'l1':
             loss = F.l1_loss(output, target)
-        elif loss_function =='mr':
+        elif loss_function == 'mr':
             loss = F.margin_ranking_loss(output, target)
-        elif loss_function =='mlm':
+        elif loss_function == 'mlm':
             loss = F.multilabel_margin_loss(output, target)
-        elif loss_function =='mlsm':
+        elif loss_function == 'mlsm':
             loss = F.multilabel_soft_margin_loss(output, target)
-        elif loss_function =='mm':
+        elif loss_function == 'mm':
             loss = F.multi_margin_loss(output, target)
-        elif loss_function =='bcelogits':
+        elif loss_function == 'bcelogits':
             loss = F.binary_cross_entropy_with_logits(output, target)
-        elif loss_function =='sl1':
+        elif loss_function == 'sl1':
             oloss = F.smooth_l1_loss(output, target)
-        elif loss_function =='sm':
+        elif loss_function == 'sm':
             loss = F.soft_margin_loss(output, target)
-        elif loss_function =='tm':
+        elif loss_function == 'tm':
             loss = F.triplet_margin_loss(output, target)
 
         # Measure loss
@@ -200,13 +199,28 @@ def train(epoch, model, train_loader, optimizer, loss_function):
         optimizer.step()
 
         if batch_idx % log_interval == 0:
-            if epoch.is_integer() == 0:
+            if epoch.is_integer() and save == 1 and epoch != 0:
+                save_state = {'epoch': epoch, 'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+                number_dec = str(snapshot_interval-int(snapshot_interval))[2:]
+                if number_dec is '':
+                    number_dec = '0'
+                epoch_fmt = "{:." + number_dec + "f}"
+                snapshot_file = os.path.join(args.save, snapshot_prefix + '_' + epoch_fmt.format(epoch) + '.pth.tar')
+                torch.save(save_state, snapshot_file)
+                logging.info('Snapshot saved.')
+                logging.info('Snapshotting to %s', snapshot_file)
+
+
+            elif epoch.is_integer() == 0:
                 print('Train Epoch: {}\t'
-                     'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
-                     'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 
-                        100. * batch_idx / len(train_loader), losses.val))
-                logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+                      'Batch: [{:5d}/{:5d} ({:3.0f}%)]\t'
+                      'Loss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset),
+                                            100. * batch_idx / len(train_loader), losses.val))
+                logging.info("Training (epoch " + str(epoch) + "):" + " loss = " + str(losses.val) + ", lr = " + str(
+                    args.lr_base_rate) + ", accuracy = {0:.2f}".format(accuracy.avg))
+
             epoch += 0.1
+
 
 def validate(epoch, model, validation_loader, loss_function):
     losses = average_meter()
@@ -227,37 +241,37 @@ def validate(epoch, model, validation_loader, loss_function):
         # Define loss function - under torch.nn.functional
         if loss_function == 'nll':
             loss = F.nll_loss(output, target)
-        elif loss_function =='mse':
+        elif loss_function == 'mse':
             loss = F.mse_loss(output, target)
-        elif loss_function =='bse':
+        elif loss_function == 'bse':
             loss = F.binary_cross_entropy(output, target)
-        elif loss_function =='pnll':
+        elif loss_function == 'pnll':
             loss = F.poisson_nll_loss(output, target)
-        elif loss_function =='cosemb':
+        elif loss_function == 'cosemb':
             loss = F.cosine_embedding_loss(output, target)
-        elif loss_function =='crossen':
+        elif loss_function == 'crossen':
             loss = F.cross_entropy(output, target)
-        elif loss_function =='hingemeb':
+        elif loss_function == 'hingemeb':
             loss = F.hinge_embedding_loss(output, target)
-        elif loss_function =='kldiv':
+        elif loss_function == 'kldiv':
             loss = F.kl_div(output, target)
-        elif loss_function =='l1':
+        elif loss_function == 'l1':
             loss = F.l1_loss(output, target)
-        elif loss_function =='mr':
+        elif loss_function == 'mr':
             loss = F.margin_ranking_loss(output, target)
-        elif loss_function =='mlm':
+        elif loss_function == 'mlm':
             loss = F.multilabel_margin_loss(output, target)
-        elif loss_function =='mlsm':
+        elif loss_function == 'mlsm':
             loss = F.multilabel_soft_margin_loss(output, target)
-        elif loss_function =='mm':
+        elif loss_function == 'mm':
             loss = F.multi_margin_loss(output, target)
-        elif loss_function =='bcelogits':
+        elif loss_function == 'bcelogits':
             loss = F.binary_cross_entropy_with_logits(output, target)
-        elif loss_function =='sl1':
+        elif loss_function == 'sl1':
             oloss = F.smooth_l1_loss(output, target)
-        elif loss_function =='sm':
+        elif loss_function == 'sm':
             loss = F.soft_margin_loss(output, target)
-        elif loss_function =='tm':
+        elif loss_function == 'tm':
             loss = F.triplet_margin_loss(output, target)
 
         # Measure loss
@@ -270,7 +284,10 @@ def validate(epoch, model, validation_loader, loss_function):
 
     print('\nTest: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
         losses.avg, int(accuracy.sum), len(validation_loader.dataset), 100. * accuracy.avg))
-    logging.info("Validation (epoch " + str(epoch) + "):" + " loss = " + str(losses.avg) + ", accuracy = " + "{0:.2f}".format(accuracy.avg))
+    logging.info(
+        "Validation (epoch " + str(epoch) + "):" + " loss = " + str(losses.avg) + ", accuracy = " + "{0:.2f}".format(
+            accuracy.avg))
+
 
 class average_meter(object):
 
@@ -291,14 +308,13 @@ class average_meter(object):
 
 
 def main():
-
     if args.validation_interval == 0:
         args.validation_db = None
     if args.seed:
         torch.manual_seed(args.seed)
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
-    
+
     batch_size_train = args.batch_size
     batch_size_val = args.batch_size
     logging.info("Train batch size is %s and validation batch size is %s", batch_size_train, batch_size_val)
@@ -330,16 +346,13 @@ def main():
         logging.info("Found %s classes", nclasses)
 
     transform = transforms.Compose([
-                               transforms.ToTensor(),
-                               transforms.Normalize((0.1307,), (0.3081,))
-                           ])
-
-    train_set = pt_data.LMDB_Loader(args.train_db, transform)
-    val_set = pt_data.LMDB_Loader(args.validation_db, transform)
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))
+    ])
 
     # Import the network file
     path_network = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.networkDirectory, args.network)
-    exec(open(path_network).read(), globals())
+    exec (open(path_network).read(), globals())
 
     try:
         Net
@@ -352,49 +365,56 @@ def main():
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.train_db:
-        train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+        train_loader = torch.utils.data.DataLoader(
+            datasets.MNIST('../data', train=True, download=True,
+                           transform=transform), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     if args.validation_db:
-        validation_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
+        validation_loader = torch.utils.data.DataLoader(
+            datasets.MNIST('../data', train=False, download=True,
+                           transform=transform), batch_size=args.batch_size, shuffle=args.shuffle, **kwargs)
     model = Net()
     if args.cuda:
         model.cuda()
 
-    # Optimizer - under torch.optim 
+    # Optimizer - under torch.optim
     if args.optimization == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum)
-    elif args.optimization =='nag':
-        optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate,momentum=args.momentum, nesterov=True)
-    elif args.optimization =='adagrad':
+    elif args.optimization == 'nag':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr_base_rate, momentum=args.momentum, nesterov=True)
+    elif args.optimization == 'adagrad':
         optimizer = optim.Adagrad(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='rmsprop':
+    elif args.optimization == 'rmsprop':
         optimizer = optim.RMSprop(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='adadelta':
-        optimizer = optim.adadelta(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='adam':
+    elif args.optimization == 'adadelta':
+        optimizer = optim.Adadelta(model.parameters(), lr=args.lr_base_rate)
+    elif args.optimization == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='sparseadam':
+    elif args.optimization == 'sparseadam':
         optimizer = optim.SparseAdam(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='adamax':
+    elif args.optimization == 'adamax':
         optimizer = optim.Adamax(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='asgd':
+    elif args.optimization == 'asgd':
         optimizer = optim.ASGD(model.parameters(), lr=args.lr_base_rate)
-    elif args.optimization =='rprop':
+    elif args.optimization == 'rprop':
         optimizer = optim.Rprop(model.parameters(), lr=args.lr_base_rate)
 
-    
     logging.info('Started training the model')
 
     # Intiial forward pass
     validate(0, model, validation_loader, args.loss)
+    save = 0
 
     for epoch in range(0, args.epoch):
+        if args.snapshotInterval and epoch % args.validation_interval == 0:
+            save = 1
 
         # Training network
-        train(epoch, model, train_loader, optimizer, args.loss)
+        train(epoch, model, train_loader, optimizer, args.loss, save, snapshot_prefix, args.snapshotInterval)
 
         # For every validation interval, perform validation
         if args.validation_db and epoch % args.validation_interval == 0:
             validate(epoch + 1, model, validation_loader, args.loss)
 
+
 if __name__ == '__main__':
-        main()
+    main()

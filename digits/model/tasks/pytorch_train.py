@@ -457,27 +457,20 @@ class PyTorchTrainTask(TrainTask):
     @override
     def detect_snapshots(self):
         self.snapshots = []
-
-        snapshot_dir = os.path.join(self.job_dir, os.path.dirname(self.snapshot_prefix))
         snapshots = []
-
-        for filename in os.listdir(snapshot_dir):
+        for filename in os.listdir(self.job_dir):
             # find models
             match = re.match(r'%s_(\d+)\.?(\d*)\.pth.tar\.index$' % self.snapshot_prefix, filename)
             if match:
                 epoch = 0
+                # remove '.index' suffix from filename
+                filename = filename[:-6]
                 if match.group(2) == '':
                     epoch = int(match.group(1))
                 else:
                     epoch = float(match.group(1) + '.' + match.group(2))
-                snapshots.append((
-                    os.path.join(snapshot_dir, filename),
-                    epoch
-                )
-                )
-
+                snapshots.append((os.path.join(self.job_dir, filename), epoch))
         self.snapshots = sorted(snapshots, key=lambda tup: tup[1])
-
         return len(self.snapshots) > 0
 
     @override

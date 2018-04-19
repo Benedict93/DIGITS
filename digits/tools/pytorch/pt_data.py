@@ -20,12 +20,12 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%
                     level=logging.INFO)
 
 class LMDB_Loader(data.Dataset):
-    def __init__(self, db_path, transform=None, target_transform=None):
+    def __init__(self, transform=None, target_transform=None):
         
-        #TODO: set-up the given LMDB file (understand how LMDB works, what output does it do)
+        # TODO: set-up the given LMDB file (understand how LMDB works, what output does it do)
         self.transform = transform
         self.target_transform = target_transform
-        self.db_path= db_path
+        self.db_path = "/home/benedict/digits-test/DIGITS/digits/jobs/20180403-193207-1f1d/train_db"
 
         self.lmdb_env = lmdb.open(self.db_path, readonly=True)
 
@@ -37,7 +37,7 @@ class LMDB_Loader(data.Dataset):
 
     def __getitem__(self, index):
 
-        #TODO: get item from lmdb file
+        # TODO: get item from lmdb file
         datum = caffe.proto.caffe_pb2.Datum() 
         lmdb_cursor = self.lmdb_txn.cursor()
         value = lmdb_cursor.get(self.keys[index])
