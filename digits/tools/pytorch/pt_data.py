@@ -10,10 +10,11 @@ import caffe
 import lmdb
 import logging
 import numpy as np
+from StringIO import StringIO
 
 import torch
 import torch.utils.data as data
-import torchvision
+
 
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S',
@@ -42,20 +43,15 @@ class LMDB_Loader(data.Dataset):
         lmdb_cursor = self.lmdb_txn.cursor()
         value = lmdb_cursor.get(self.keys[index])
         datum.ParseFromString(value)
-        print('{},{},{}, {}{}{}'.format(value, datum.data, len(datum.data), datum.channels, datum.height, datum.width))
+        
+        s = StringIO(datum.data)
+        img = PIL.Image.open(s)
+
         label = datum.label
 
-        data = caffe.io.datum_to_array(datum)
-
-        # TODO: convert to tensor
-        """
-        data = torchvision.transforms.ToTensor(data)
-        label = torchvision.transforms.ToTensor(label)
-        """
-
-        #TODO: do transforms for image
+        #TODO: do transforms for image including transform to Tensor
         if self.transform is not None:
-            img = self.transform(data)
+            img = self.transform(img)
 
         return img, label
 
